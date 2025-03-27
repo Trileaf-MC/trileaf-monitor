@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: trileaf-monitor
+trileaf:
+  monitor:
+    panel:
+      mcsm:
+        type: mcsm
+        baseUrl: http://211.154.16.45:23333 # 基础URL
+        apiKey: 66cbc5376ebf476783f0dd70dab5dfe9 # API密钥
+        # 所有API路径的集合
+        apiPaths:
+          # 所有API请求的基础前缀
+          prefix: /api
+          # 获取概览信息的API路径
+          overview: /overview
+          # 获取用户列表的API路径
+          userList: /auth/search
+          # 获取实例列表的API路径
+          instancesList: /service/remoteServiceInstances
+          # 获取特定实例详情的API路径
+          instanceDetail: /instance
+          # 获取文库列表的API路径
+          fileList: /files/list
+          # 获取文件内容的API路径
+          fileContent: /files
+          # 解压文件的API路径
+          decompress: /files/compress
+
+      pterodactyl:
+        type: pterodactyl
+        baseUrl: http://211.154.16.45:23333 # 基础URL
+        apiKey: 66cbc5376ebf476783f0dd70dab5dfe9 # API密钥
+        # 所有API路径的集合
+        apiPaths:
+          # 所有API请求的基础前缀
+          prefix: /api
+          # 获取概览信息的API路径
+          overview: /overview
+          # 获取用户列表的API路径
+          userList: /auth/search
+          # 获取实例列表的API路径
+          instancesList: /service/remoteServiceInstances
+          # 获取特定实例详情的API路径
+          instanceDetail: /instance
+          # 获取文库列表的API路径
+          fileList: /files/list
+          # 获取文件内容的API路径
+          fileContent: /files
+          # 解压文件的API路径
+          decompress: /files/compress
+
