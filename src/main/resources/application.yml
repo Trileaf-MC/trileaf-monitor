@@ -4,10 +4,10 @@ spring:
 trileaf:
   monitor:
     panel:
-      mcsm:
-        type: mcsm
+      MCSManager:
+        type: MCSManager
         baseUrl: http://211.154.16.45:23333 # 基础URL
-        apiKey: 66cbc5376ebf476783f0dd70dab5dfe9 # API密钥
+        apiKey: 658173b28adc43c2b4032312bd88fdf8 # API密钥
         # 所有API路径的集合
         apiPaths:
           # 所有API请求的基础前缀
@@ -26,15 +26,14 @@ trileaf:
           fileContent: /files
           # 解压文件的API路径
           decompress: /files/compress
-
-      pterodactyl:
-        type: pterodactyl
-        baseUrl: http://211.154.16.45:23333 # 基础URL
+      Pterodactyl:
+        type: Pterodactyl
+        baseUrl: http://localhost:123456 # 基础URL
         apiKey: 66cbc5376ebf476783f0dd70dab5dfe9 # API密钥
         # 所有API路径的集合
         apiPaths:
           # 所有API请求的基础前缀
-          prefix: /api
+          prefix: /yilong
           # 获取概览信息的API路径
           overview: /overview
           # 获取用户列表的API路径

@@ -13,8 +13,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum PanelEM {
 
-    MCSMANAGER("MCSMANAGER", "MCSMANAGER"),
-    PTERODACTYL("ZHONGNING", "PTERODACTYL");
+    MCSMANAGER("MCSManager", "MCSManager"),
+    PTERODACTYL("Pterodactyl", "Pterodactyl");
 
     private final String value;
     private final String desc;

@@ -1,12 +1,8 @@
 package com.trileaf.handler;
 
 import com.trileaf.config.TrileafMonitorConfig;
+import com.trileaf.entity.mcsm.MCSManagerBaseResponse;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-
-import java.io.IOException;
-import java.net.http.HttpHeaders;
 
 /**
  * 面板处理器抽象类 提供请求的基础方法
@@ -23,27 +19,41 @@ public abstract class AbstractPanelHandler implements PanelHandler {
         this.okHttpClient = okHttpClient;
     }
 
-    protected String buildUrl(String path) {
-        config.getPanel()
-        return config.getBaseUrl() + config.getApiPaths().getPrefix() + path;
+
+    /**
+     * 构建基础Url
+     *
+     * @param panelType 面板类型
+     * @return {@link String}
+     * @author 徐亚松 2025/3/28 09:49
+     */
+    protected String getBaseUrl(String panelType) {
+        TrileafMonitorConfig.PanelConfig panelConfig = this.getPanelConfig(panelType);
+        return panelConfig.getBaseUrl();
     }
 
-    protected Request createRequestWithHeaders(String url) {
-        Request.Builder requestBuilder = new Request.Builder()
-                .url(url);
 
-        // 添加公共请求头
-        // requestBuilder.addHeader("Authorization", "Bearer " + config.getApiKey()); // 示例：添加API密钥
-        // 可以继续添加其他需要的头部信息
-
-        return requestBuilder.build();
+    /**
+     * 获取当前面板的配置信息
+     *
+     * @param panelType 面板类型
+     * @return {@link TrileafMonitorConfig.PanelConfig}
+     * @author 徐亚松 2025/3/28 10:34
+     */
+    protected TrileafMonitorConfig.PanelConfig getPanelConfig(String panelType) {
+        return config.getPanel().get(panelType);
     }
 
-    // 使用示例
-    protected Response makeGetRequest(String path) throws IOException {
-        String url = this.buildUrl(path);
-        Request request = createRequestWithHeaders(url);
-
-        return okHttpClient.newCall(request).execute();
+    /**
+     * 获取概览信息
+     *
+     * @return {@link MCSManagerBaseResponse}
+     * @author 徐亚松 2025/3/28 11:30
+     */
+    @Override
+    public MCSManagerBaseResponse getOverview() {
+        return null;
     }
+
+
 }
