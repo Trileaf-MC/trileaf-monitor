@@ -3,6 +3,7 @@ package com.trileaf.handler;
 import com.trileaf.config.TrileafMonitorConfig;
 import com.trileaf.factory.PanelEM;
 import okhttp3.OkHttpClient;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 /**

@@ -2,12 +2,18 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.4</version>
-        <relativePath/> <!-- lookup parent from repository -->
-    </parent>
+    <!-- 使用 dependencyManagement 来引入 Spring Boot 依赖版本 -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>3.4.4</version>
+                <scope>import</scope> <!-- 用于管理依赖版本 -->
+                <type>pom</type> <!-- 这是一个 POM 类型的依赖，专门用于版本管理 -->
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <groupId>com.trileaf</groupId>
     <artifactId>trileaf-monitor</artifactId>
@@ -37,11 +43,11 @@
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
 
-        <dependency>
+    <!--    <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
-        </dependency>
+        </dependency>-->
 
         <dependency>
             <groupId>com.alibaba.fastjson2</groupId>
@@ -74,9 +80,18 @@
 
     <build>
         <plugins>
+            <!-- 让项目打包成普通的 Jar（不是可执行的 Spring Boot Jar） -->
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                        </manifest>
+                    </archive>
+                </configuration>
             </plugin>
         </plugins>
     </build>
