@@ -1,4 +1,4 @@
-package com.trileaf.entity.mcsm.response;
+package com.trileaf.entity.panel.mcsm.response;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,9 +14,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class RemoteServiceInstancesResponse extends MCSManagerBaseResponse {
-    /**
-     * 分页数据
-     */
+
     private Data data;
 
     @lombok.Data

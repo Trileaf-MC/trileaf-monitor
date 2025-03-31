@@ -17,7 +17,7 @@ trileaf:
           # 获取用户列表的API路径
           userList: /auth/search
           # 获取实例列表的API路径
-          instancesList: /service/remoteServiceInstances
+          instancesList: /service/remote_service_instances
           # 获取特定实例详情的API路径
           instanceDetail: /instance
           # 获取文库列表的API路径

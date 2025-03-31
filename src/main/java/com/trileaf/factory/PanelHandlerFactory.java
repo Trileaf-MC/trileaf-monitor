@@ -6,8 +6,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 面板工厂类
@@ -20,19 +23,20 @@ public class PanelHandlerFactory {
     /**
      * 面板处理器
      */
-    private static final Map<String, PanelHandler> panelRegistry = new ConcurrentHashMap<>();
+    private   Map<String, PanelHandler<?>> panelRegistry = new ConcurrentHashMap<>();
+
 
     /**
      * 构造方法自动注入所有实现了 PanelHandler 接口的 Bean，
      * 并根据各自的 getPanelType() 方法返回的值存入静态注册表中。
      *
-     * @param handlerMap 面板map
+     * @param handlerList 面板处理器集合
      * @author 徐亚松 2025/3/28 09:07
      */
     @Autowired
-    public PanelHandlerFactory(Map<String, PanelHandler> handlerMap) {
-        panelRegistry.clear();
-        handlerMap.values().forEach(handler -> panelRegistry.put(handler.getPanelType(), handler));
+    public PanelHandlerFactory(List<PanelHandler<?>> handlerList) {
+        panelRegistry = handlerList.stream()
+                .collect(Collectors.toMap(PanelHandler::getPanelType, Function.identity()));
     }
 
 
@@ -43,14 +47,19 @@ public class PanelHandlerFactory {
      * @return {@link PanelHandler}  对应的处理器实例
      * @author 徐亚松 2025/3/28 09:07
      */
-    public static PanelHandler getPanelHandler(String panelType) {
+    @SuppressWarnings("unchecked")
+    public <T> PanelHandler<T> getHandler(String panelType) {
         Assert.hasText(panelType, "获取处理类失败，参数为空");
-        PanelHandler handler = panelRegistry.get(panelType);
+        PanelHandler<T> handler = (PanelHandler<T>) panelRegistry.get(panelType);
         if (!StringUtils.hasText(panelType)) {
             // 如有需要，可添加默认值处理逻辑
             throw new IllegalArgumentException("未指定有效的 panelType");
         }
         Assert.notNull(handler, "获取处理类失败，未找到 panelType：" + panelType);
         return handler;
+
+        //return (PanelHandler<T>) panelRegistry.get(panelType);
     }
+
+
 }

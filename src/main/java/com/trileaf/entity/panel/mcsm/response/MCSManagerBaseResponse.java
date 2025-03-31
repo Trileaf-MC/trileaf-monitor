@@ -1,9 +1,9 @@
-package com.trileaf.entity.mcsm.response;
+package com.trileaf.entity.panel.mcsm.response;
 
 import lombok.Data;
 
 /**
- * MCSM响应实体基类
+ * MCSM响应基类
  *
  * @author 徐亚松
  * 2025/3/28 10:02

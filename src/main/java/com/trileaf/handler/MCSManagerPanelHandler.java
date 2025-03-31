@@ -2,22 +2,23 @@ package com.trileaf.handler;
 
 import com.alibaba.fastjson2.JSON;
 import com.trileaf.config.TrileafMonitorConfig;
-import com.trileaf.entity.mcsm.request.MCSManagerRequest;
-import com.trileaf.entity.mcsm.response.MCSManagerBaseResponse;
-import com.trileaf.entity.mcsm.response.OverviewResponse;
-import com.trileaf.config.PanelResponse;
-import com.trileaf.entity.mcsm.response.RemoteServiceInstancesResponse;
+import com.trileaf.entity.panel.PanelBaseResponse;
+import com.trileaf.entity.panel.mcsm.request.MCSManagerRequest;
+import com.trileaf.entity.panel.mcsm.response.*;
 import com.trileaf.factory.PanelEM;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.net.MalformedURLException;
+import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -56,10 +57,13 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
      * <p>2025-03-28 21:41</p>
      */
     @Override
-    public PanelResponse<MCSManagerBaseResponse> getOverview() {
+    public PanelBaseResponse<OverviewResponse> getOverview() {
         try {
-            OverviewResponse overviewResponse = this.executeRequest(panelConfig.getApiPaths().getOverview(),null, OverviewResponse.class);
-            return new PanelResponse<>(this.getPanelType(),overviewResponse);
+            OverviewResponse data = this.executeRequest(
+                    panelConfig.getApiPaths().getOverview(),
+                    "GET", null,
+                    null, OverviewResponse.class);
+            return new PanelBaseResponse<>(this.getPanelType(), data);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -76,15 +80,110 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
      * <p>2025-03-28 22:20</p>
      */
     @Override
-    public PanelResponse<?> getRemoteServiceInstances(MCSManagerRequest param) {
+    public PanelBaseResponse<RemoteServiceInstancesResponse> getRemoteServiceInstances(MCSManagerRequest param) {
         try {
-            OverviewResponse overviewResponse = this.executeRequest(panelConfig.getApiPaths().getOverview(),param, OverviewResponse.class);
-            return new PanelResponse<>(this.getPanelType(),overviewResponse);
-
+            Map<String, String> queryParams = this.convertRequestToQueryParams(param);
+            RemoteServiceInstancesResponse data = this.executeRequest(
+                    panelConfig.getApiPaths().getInstancesList(),
+                    "GET", queryParams,
+                    null, RemoteServiceInstancesResponse.class);
+            return new PanelBaseResponse<>(this.getPanelType(), data);
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
+    }
+
+
+    /**
+     * 获取实例详情
+     *
+     * @param param 请求参数
+     * @return {@link PanelBaseResponse<InstanceDetailResponse>}
+     * @author 徐亚松 2025/3/31 14:43
+     */
+    @Override
+    public PanelBaseResponse<InstanceDetailResponse> getInstance(MCSManagerRequest param) {
+        try {
+            Map<String, String> queryParams = this.convertRequestToQueryParams(param);
+            InstanceDetailResponse data = this.executeRequest(
+                    panelConfig.getApiPaths().getInstanceDetail(),
+                    "GET", queryParams,
+                    null, InstanceDetailResponse.class);
+            return new PanelBaseResponse<>(this.getPanelType(), data);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * 获取文库列表
+     *
+     * @param param 请求参数
+     * @return {@link PanelBaseResponse<FileListResponse>}
+     * @author 徐亚松 2025/3/31 14:55
+     */
+    @Override
+    public PanelBaseResponse<FileListResponse> getFileList(MCSManagerRequest param) {
+        try {
+            Map<String, String> queryParams = this.convertRequestToQueryParams(param);
+            FileListResponse data = this.executeRequest(
+                    panelConfig.getApiPaths().getFileList(),
+                    "GET", queryParams,
+                    null, FileListResponse.class);
+            return new PanelBaseResponse<>(this.getPanelType(), data);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * 获取文件内容
+     *
+     * @param body 请求体
+     * @return {@link PanelBaseResponse<FileContentResponse>}
+     * @author 徐亚松 2025/3/31 15:44
+     */
+    @Override
+    public PanelBaseResponse<FileContentResponse> getFileContent(MCSManagerRequest param, RequestBody body) {
+        try {
+            Map<String, String> queryParams = this.convertRequestToQueryParams(param);
+            FileContentResponse data = this.executeRequest(
+                    panelConfig.getApiPaths().getFileContent(),
+                    "PUT", queryParams,
+                    body, FileContentResponse.class);
+            return new PanelBaseResponse<>(this.getPanelType(), data);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * 反射将对象转为map参数
+     *
+     * @param param 参数
+     * @return {@link Map<String,String>}
+     * @author 徐亚松 2025/3/31 14:41
+     */
+    private Map<String, String> convertRequestToQueryParams(MCSManagerRequest param) {
+        Map<String, String> queryParams = new HashMap<>();
+        try {
+            Field[] fields = param.getClass().getDeclaredFields();
+            for (Field field : fields) {
+                field.setAccessible(true);
+                Object value = field.get(param);
+                // 如果字段不为null，则无论值是多少，都加入参数（包括0和空字符串）
+                if (value != null) {
+                    queryParams.put(field.getName(), String.valueOf(value));
+                }
+            }
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return queryParams;
     }
 
     /**
@@ -96,34 +195,62 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
      * @return 解析后的响应对象
      * @author 徐亚松 2025/3/28 11:30
      */
-    private <T> T executeRequest(String apiPath, MCSManagerRequest param , Class<T> responseType) throws Exception {
-        String url = this.buildApiUri(apiPath);
+    private <T> T executeRequest(String apiPath, String httpMethod, Map<String, String> queryParams, RequestBody body, Class<T> responseType) throws Exception {
+        // 构造完整 URL，同时添加固定的apikey参数及其他query参数
+        String url = this.buildApiUri(apiPath, queryParams);
+        System.out.println(url);
+        // 创建请求构造器
+        Request.Builder builder = new Request.Builder().url(url);
 
-        // 创建请求
-        Request request = new Request.Builder().url(url).build();
+        // 根据 httpMethod 处理请求体
+        if ("POST".equalsIgnoreCase(httpMethod) || "PUT".equalsIgnoreCase(httpMethod)) {
+            builder.method(httpMethod, body);
+        } else {
+            // GET 或其他方法不带请求体
+            builder.method(httpMethod, null);
+        }
+
+        Request request = builder.build();
+
         try (Response response = okHttpClient.newCall(request).execute()) {
-            Assert.isTrue(response.isSuccessful(), MessageFormat.format("Unexpected HTTP response code: {0}, message: {1}", response.code(), response.message()));
+            Assert.isTrue(response.isSuccessful(),
+                    MessageFormat.format("Unexpected HTTP response code: {0}, message: {1}", response.code(), response.message()));
 
-            // 解析响应体
             String responseBody = response.body().string();
-            return JSON.parseObject(responseBody, responseType);
+            T t = JSON.parseObject(responseBody, responseType);
+            return t;
         }
     }
 
     /**
      * 构建基础Url
      *
-     * @param apiPath 接口路径
+     * @param apiPath     接口路径
+     * @param queryParams 参数
      * @return {@link String}
      * @author 徐亚松 2025/3/28 12:39
      */
-    private String buildApiUri(String apiPath) throws URISyntaxException, MalformedURLException {
+    private String buildApiUri(String apiPath, Map<String, String> queryParams) throws URISyntaxException {
         String baseUrl = this.panelConfig.getBaseUrl();
         String prefix = this.panelConfig.getApiPaths().getPrefix();
 
         // 处理路径拼接（自动处理多余的斜杠）
-        String fullPath = Stream.of(prefix, apiPath).map(s -> s.replaceAll("^/+|/+$", "")).filter(s -> !s.isEmpty()).collect(Collectors.joining("/"));
+        String fullPath = Stream.of(prefix, apiPath)
+                .map(s -> s.replaceAll("^/+|/+$", ""))
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining("/"));
 
-        return new URIBuilder(baseUrl).setPath("/" + fullPath).addParameter("apikey", this.panelConfig.getApiKey()).build().toString();
+        URIBuilder uriBuilder = new URIBuilder(baseUrl)
+                .setPath("/" + fullPath)
+                // 固定添加一个apikey参数
+                .addParameter("apikey", this.panelConfig.getApiKey());
+
+        // 添加额外的 query 参数（如果有）
+        if (queryParams != null) {
+            for (Map.Entry<String, String> entry : queryParams.entrySet()) {
+                uriBuilder.addParameter(entry.getKey(), entry.getValue());
+            }
+        }
+        return uriBuilder.build().toString();
     }
 }

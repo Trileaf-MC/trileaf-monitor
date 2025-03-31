@@ -1,4 +1,4 @@
-package com.trileaf.entity.mcsm.response;
+package com.trileaf.entity.panel.mcsm.response;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
