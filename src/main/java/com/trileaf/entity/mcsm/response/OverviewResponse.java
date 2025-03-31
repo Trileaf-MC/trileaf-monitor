@@ -1,4 +1,4 @@
-package com.trileaf.entity.mcsm;
+package com.trileaf.entity.mcsm.response;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -6,7 +6,7 @@ import lombok.EqualsAndHashCode;
 import java.util.List;
 
 /**
- * 概览响应数据类（MCSManager）
+ * 概览数据响应
  *
  * @author 徐亚松
  * 2025/3/28 10:10

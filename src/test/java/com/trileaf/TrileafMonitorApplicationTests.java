@@ -2,7 +2,8 @@ package com.trileaf;
 
 import com.alibaba.fastjson2.JSON;
 import com.trileaf.config.TrileafMonitorConfig;
-import com.trileaf.entity.mcsm.MCSManagerBaseResponse;
+import com.trileaf.entity.mcsm.response.MCSManagerBaseResponse;
+import com.trileaf.config.PanelResponse;
 import com.trileaf.factory.PanelEM;
 import com.trileaf.factory.PanelHandlerFactory;
 import com.trileaf.handler.PanelHandler;
@@ -19,10 +20,10 @@ class TrileafMonitorApplicationTests {
     @Test
     void contextLoads() {
         PanelHandler panelHandler = PanelHandlerFactory.getPanelHandler(PanelEM.MCSMANAGER.getValue());
-        MCSManagerBaseResponse overview = panelHandler.getOverview();
+        PanelResponse<MCSManagerBaseResponse> overview = (PanelResponse<MCSManagerBaseResponse>) panelHandler.getOverview();
         log.info(JSON.toJSONString(overview));
 
-        PanelHandler pterodactylPanelHandler = PanelHandlerFactory.getPanelHandler(PanelEM.PTERODACTYL.getValue());
+        // PanelHandler pterodactylPanelHandler = PanelHandlerFactory.getPanelHandler(PanelEM.PTERODACTYL.getValue());
     }
 
 }

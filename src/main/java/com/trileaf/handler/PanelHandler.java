@@ -1,6 +1,9 @@
 package com.trileaf.handler;
 
-import com.trileaf.entity.mcsm.MCSManagerBaseResponse;
+import com.trileaf.config.PanelResponse;
+import com.trileaf.entity.mcsm.request.MCSManagerRequest;
+import com.trileaf.entity.mcsm.response.MCSManagerBaseResponse;
+import com.trileaf.entity.mcsm.response.RemoteServiceInstancesResponse;
 
 /**
  * 面板统一接口
@@ -23,7 +26,17 @@ public interface PanelHandler {
      * @return {@link MCSManagerBaseResponse} 响应
      * @author 徐亚松 2025/3/28 12:40
      */
-    MCSManagerBaseResponse getOverview();
+    PanelResponse<?> getOverview();
+
+    /**
+     * 获取实例列表
+     *
+     * @param param 请求参数
+     * @return {@link RemoteServiceInstancesResponse}
+     * @author 徐亚松
+     * <p>2025-03-28 22:20</p>
+     */
+    PanelResponse<?> getRemoteServiceInstances(MCSManagerRequest param);
 
 
 }

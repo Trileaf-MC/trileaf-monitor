@@ -2,8 +2,11 @@ package com.trileaf.handler;
 
 import com.alibaba.fastjson2.JSON;
 import com.trileaf.config.TrileafMonitorConfig;
-import com.trileaf.entity.mcsm.MCSManagerBaseResponse;
-import com.trileaf.entity.mcsm.OverviewResponse;
+import com.trileaf.entity.mcsm.request.MCSManagerRequest;
+import com.trileaf.entity.mcsm.response.MCSManagerBaseResponse;
+import com.trileaf.entity.mcsm.response.OverviewResponse;
+import com.trileaf.config.PanelResponse;
+import com.trileaf.entity.mcsm.response.RemoteServiceInstancesResponse;
 import com.trileaf.factory.PanelEM;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -33,23 +36,56 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
         super(config, okHttpClient);
     }
 
+    /**
+     * 获取处理器类型
+     *
+     * @return {@link String}
+     * @author 徐亚松
+     * <p>2025-03-28 21:42</p>
+     */
     @Override
     public String getPanelType() {
         return PanelEM.MCSMANAGER.getValue();
     }
 
+    /**
+     * 获取概览信息
+     *
+     * @return {@link MCSManagerBaseResponse}
+     * @author 徐亚松
+     * <p>2025-03-28 21:41</p>
+     */
     @Override
-    public MCSManagerBaseResponse getOverview() {
+    public PanelResponse<MCSManagerBaseResponse> getOverview() {
         try {
-            return this.executeRequest(panelConfig.getApiPaths().getOverview(), OverviewResponse.class);
+            OverviewResponse overviewResponse = this.executeRequest(panelConfig.getApiPaths().getOverview(),null, OverviewResponse.class);
+            return new PanelResponse<>(this.getPanelType(),overviewResponse);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
     }
 
+    /**
+     * 获取实例列表
+     *
+     * @param param 请求参数
+     * @return {@link RemoteServiceInstancesResponse}
+     * @author 徐亚松
+     * <p>2025-03-28 22:20</p>
+     */
+    @Override
+    public PanelResponse<?> getRemoteServiceInstances(MCSManagerRequest param) {
+        try {
+            OverviewResponse overviewResponse = this.executeRequest(panelConfig.getApiPaths().getOverview(),param, OverviewResponse.class);
+            return new PanelResponse<>(this.getPanelType(),overviewResponse);
 
-
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
     /**
      * 发送请求并获取响应
@@ -60,14 +96,13 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
      * @return 解析后的响应对象
      * @author 徐亚松 2025/3/28 11:30
      */
-    private <T> T executeRequest(String apiPath, Class<T> responseType) throws Exception {
+    private <T> T executeRequest(String apiPath, MCSManagerRequest param , Class<T> responseType) throws Exception {
         String url = this.buildApiUri(apiPath);
 
         // 创建请求
         Request request = new Request.Builder().url(url).build();
-        System.out.println(url);
         try (Response response = okHttpClient.newCall(request).execute()) {
-            Assert.isTrue(!response.isSuccessful(), MessageFormat.format("Unexpected HTTP response code: {0}, message: {1}", response.code(), response.message()));
+            Assert.isTrue(response.isSuccessful(), MessageFormat.format("Unexpected HTTP response code: {0}, message: {1}", response.code(), response.message()));
 
             // 解析响应体
             String responseBody = response.body().string();

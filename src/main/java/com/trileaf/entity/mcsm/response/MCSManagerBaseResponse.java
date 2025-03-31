@@ -1,4 +1,4 @@
-package com.trileaf.entity.mcsm;
+package com.trileaf.entity.mcsm.response;
 
 import lombok.Data;
 
