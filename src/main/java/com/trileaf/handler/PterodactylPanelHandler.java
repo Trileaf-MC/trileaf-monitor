@@ -4,6 +4,7 @@ import com.trileaf.config.TrileafMonitorConfig;
 import com.trileaf.factory.PanelEM;
 import okhttp3.OkHttpClient;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 /**
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Service;
  * @author 徐亚松
  * 2025/3/27 15:17
  */
-@Service
+@Component
 public class PterodactylPanelHandler extends AbstractPanelHandler {
 
     private final TrileafMonitorConfig.PanelConfig panelConfig = super.getPanelConfig(this.getPanelType());
@@ -20,7 +21,6 @@ public class PterodactylPanelHandler extends AbstractPanelHandler {
     public PterodactylPanelHandler(TrileafMonitorConfig config, OkHttpClient okHttpClient) {
         super(config, okHttpClient);
     }
-
 
     @Override
     public String getPanelType() {

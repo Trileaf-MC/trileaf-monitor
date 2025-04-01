@@ -1,8 +1,6 @@
 package com.trileaf.factory;
 
 import com.trileaf.handler.PanelHandler;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -18,12 +16,11 @@ import java.util.stream.Collectors;
  * @author 徐亚松
  * 2025/3/27 15:29
  */
-@Component
 public class PanelHandlerFactory {
     /**
      * 面板处理器
      */
-    private   Map<String, PanelHandler<?>> panelRegistry = new ConcurrentHashMap<>();
+    private Map<String, PanelHandler<?>> panelRegistry = new ConcurrentHashMap<>();
 
 
     /**
@@ -33,7 +30,6 @@ public class PanelHandlerFactory {
      * @param handlerList 面板处理器集合
      * @author 徐亚松 2025/3/28 09:07
      */
-    @Autowired
     public PanelHandlerFactory(List<PanelHandler<?>> handlerList) {
         panelRegistry = handlerList.stream()
                 .collect(Collectors.toMap(PanelHandler::getPanelType, Function.identity()));

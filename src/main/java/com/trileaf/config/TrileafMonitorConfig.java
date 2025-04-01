@@ -1,8 +1,10 @@
 package com.trileaf.config;
 
+import com.alibaba.fastjson2.JSONObject;
+import jakarta.annotation.PostConstruct;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,12 +15,16 @@ import java.util.Map;
  * @author 徐亚松
  * 2025/3/27 14:52
  */
-@Component
 @ConfigurationProperties(prefix = "trileaf.monitor")
 @Data
+@Slf4j
 public class TrileafMonitorConfig {
     private Map<String, PanelConfig> panel = new HashMap<>();
 
+    @PostConstruct
+    public void logConfig() {
+        log.info("Loaded TrileafMonitorConfig: {}", JSONObject.toJSONString(panel));
+    }
 
     /**
      * 统一面板属性类

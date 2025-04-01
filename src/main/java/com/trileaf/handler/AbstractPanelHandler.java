@@ -7,7 +7,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 
 /**
- * 面板处理器抽象类 提供请求的基础方法
+ * 面板处理器抽象类
  *
  * @author 徐亚松
  * 2025/3/27 15:08

@@ -21,9 +21,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 @Slf4j
 class TrileafMonitorApplicationTests {
     @Autowired
-    TrileafMonitorConfig config;
-
-    @Autowired
     private PanelHandlerFactory factory;
 
     //获取MCSM处理器
