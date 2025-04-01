@@ -7,6 +7,7 @@ trileaf:
     panel:
       MCSManager:
         - vendor: 供应商1
+          panelVersion: 0.0.1
           baseUrl: http://211.154.16.45:23333 # 基础URL
           apiKey: 658173b28adc43c2b4032312bd88fdf8 # API密钥
           # 所有API路径的集合

@@ -57,12 +57,12 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
      * <p>2025-03-28 21:41</p>
      */
     @Override
-    public PanelBaseResponse<OverviewResponse> getOverview() {
+    public PanelBaseResponse<OverviewResponse> getOverview(String vendor) {
         try {
             OverviewResponse data = this.executeRequest(
-                    panelConfig.getApiPaths().getOverview(),
+                    super.getPanelConfig(vendor).getApiPaths().getOverview(),
                     "GET", null,
-                    null, OverviewResponse.class);
+                    null, OverviewResponse.class,vendor);
             return new PanelBaseResponse<>(this.getPanelType(), data);
 
         } catch (Exception e) {
@@ -80,13 +80,13 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
      * <p>2025-03-28 22:20</p>
      */
     @Override
-    public PanelBaseResponse<RemoteServiceInstancesResponse> getRemoteServiceInstances(MCSManagerRequest param) {
+    public PanelBaseResponse<RemoteServiceInstancesResponse> getRemoteServiceInstances(String vendor,MCSManagerRequest param) {
         try {
             Map<String, String> queryParams = this.convertRequestToQueryParams(param);
             RemoteServiceInstancesResponse data = this.executeRequest(
-                    panelConfig.getApiPaths().getInstancesList(),
+                    super.getPanelConfig(vendor).getApiPaths().getInstancesList(),
                     "GET", queryParams,
-                    null, RemoteServiceInstancesResponse.class);
+                    null, RemoteServiceInstancesResponse.class,vendor);
             return new PanelBaseResponse<>(this.getPanelType(), data);
         } catch (Exception e) {
             e.printStackTrace();
@@ -103,13 +103,13 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
      * @author 徐亚松 2025/3/31 14:43
      */
     @Override
-    public PanelBaseResponse<InstanceDetailResponse> getInstance(MCSManagerRequest param) {
+    public PanelBaseResponse<InstanceDetailResponse> getInstance(String vendor,MCSManagerRequest param) {
         try {
             Map<String, String> queryParams = this.convertRequestToQueryParams(param);
             InstanceDetailResponse data = this.executeRequest(
-                    panelConfig.getApiPaths().getInstanceDetail(),
+                    super.getPanelConfig(vendor).getApiPaths().getInstanceDetail(),
                     "GET", queryParams,
-                    null, InstanceDetailResponse.class);
+                    null, InstanceDetailResponse.class,vendor);
             return new PanelBaseResponse<>(this.getPanelType(), data);
         } catch (Exception e) {
             e.printStackTrace();
@@ -125,13 +125,13 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
      * @author 徐亚松 2025/3/31 14:55
      */
     @Override
-    public PanelBaseResponse<FileListResponse> getFileList(MCSManagerRequest param) {
+    public PanelBaseResponse<FileListResponse> getFileList(String vendor,MCSManagerRequest param) {
         try {
             Map<String, String> queryParams = this.convertRequestToQueryParams(param);
             FileListResponse data = this.executeRequest(
                     panelConfig.getApiPaths().getFileList(),
                     "GET", queryParams,
-                    null, FileListResponse.class);
+                    null, FileListResponse.class,vendor);
             return new PanelBaseResponse<>(this.getPanelType(), data);
         } catch (Exception e) {
             e.printStackTrace();
@@ -147,13 +147,13 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
      * @author 徐亚松 2025/3/31 15:44
      */
     @Override
-    public PanelBaseResponse<FileContentResponse> getFileContent(MCSManagerRequest param, RequestBody body) {
+    public PanelBaseResponse<FileContentResponse> getFileContent(String vendor,MCSManagerRequest param, RequestBody body) {
         try {
             Map<String, String> queryParams = this.convertRequestToQueryParams(param);
             FileContentResponse data = this.executeRequest(
-                    panelConfig.getApiPaths().getFileContent(),
+                    super.getPanelConfig(vendor).getApiPaths().getFileContent(),
                     "PUT", queryParams,
-                    body, FileContentResponse.class);
+                    body, FileContentResponse.class,vendor);
             return new PanelBaseResponse<>(this.getPanelType(), data);
         } catch (Exception e) {
             e.printStackTrace();
@@ -195,9 +195,10 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
      * @return 解析后的响应对象
      * @author 徐亚松 2025/3/28 11:30
      */
-    private <T> T executeRequest(String apiPath, String httpMethod, Map<String, String> queryParams, RequestBody body, Class<T> responseType) throws Exception {
+    private <T> T executeRequest(String apiPath, String httpMethod, Map<String, String> queryParams, RequestBody body, Class<T> responseType, String vendor) throws Exception {
+        TrileafMonitorConfig.PanelConfig panelConfig = super.getPanelConfig(vendor);
         // 构造完整 URL，同时添加固定的apikey参数及其他query参数
-        String url = this.buildApiUri(apiPath, queryParams);
+        String url = this.buildApiUri(apiPath, queryParams,panelConfig);
         System.out.println(url);
         // 创建请求构造器
         Request.Builder builder = new Request.Builder().url(url);
@@ -230,9 +231,9 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
      * @return {@link String}
      * @author 徐亚松 2025/3/28 12:39
      */
-    private String buildApiUri(String apiPath, Map<String, String> queryParams) throws URISyntaxException {
-        String baseUrl = this.panelConfig.getBaseUrl();
-        String prefix = this.panelConfig.getApiPaths().getPrefix();
+    private String buildApiUri(String apiPath, Map<String, String> queryParams, TrileafMonitorConfig.PanelConfig panelConfig) throws URISyntaxException {
+        String baseUrl = panelConfig.getBaseUrl();
+        String prefix = panelConfig.getApiPaths().getPrefix();
 
         // 处理路径拼接（自动处理多余的斜杠）
         String fullPath = Stream.of(prefix, apiPath)

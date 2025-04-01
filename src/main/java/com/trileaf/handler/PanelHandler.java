@@ -22,47 +22,54 @@ public interface PanelHandler<T> {
     /**
      * 获取概览信息
      *
+     * @param vendor 厂商
      * @return {@link PanelBaseResponse} 响应
      * @author 徐亚松 2025/3/28 12:40
      */
-    PanelBaseResponse<T> getOverview();
+    PanelBaseResponse<T> getOverview(String vendor);
 
     /**
      * 获取实例列表
      *
+     * @param vendor 厂商
      * @param param 请求参数
      * @return {@link PanelBaseResponse}
      * @author 徐亚松
      * <p>2025-03-28 22:20</p>
      */
-    PanelBaseResponse<T> getRemoteServiceInstances(MCSManagerRequest param);
+    PanelBaseResponse<T> getRemoteServiceInstances(String vendor, MCSManagerRequest param);
 
     /**
-     * 获取实例列表
+     * 获取实例详情
      *
+     * @param vendor 厂商
      * @param param 请求参数
      * @return {@link PanelBaseResponse}
      * @author 徐亚松
      * <p>2025-03-28 22:20</p>
      */
-    PanelBaseResponse<T> getInstance(MCSManagerRequest param);
+    PanelBaseResponse<T> getInstance(String vendor, MCSManagerRequest param);
 
     /**
      * 获取文库列表
      *
+     * @param vendor 厂商
      * @param param 请求参数
      * @return {@link PanelBaseResponse<T>}
      * @author 徐亚松 2025/3/31 14:55
      */
-    PanelBaseResponse<T> getFileList(MCSManagerRequest param);
+    PanelBaseResponse<T> getFileList(String vendor, MCSManagerRequest param);
 
     /**
      * 获取文件内容
      *
-     * @param param 请求参数
+     * @param vendor 厂商
+     * @param param  请求参数
+     * @param body   body参数
      * @return {@link PanelBaseResponse<T>}
-     * @author 徐亚松 2025/3/31 14:55
+     * @author 徐亚松
+     * <p>2025-04-01 22:51</p>
      */
-    PanelBaseResponse<T> getFileContent(MCSManagerRequest param,RequestBody body);
+    PanelBaseResponse<T> getFileContent(String vendor, MCSManagerRequest param, RequestBody body);
 
 }

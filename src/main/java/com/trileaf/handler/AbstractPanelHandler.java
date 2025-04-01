@@ -1,10 +1,13 @@
 package com.trileaf.handler;
 
 import com.trileaf.config.TrileafMonitorConfig;
+import com.trileaf.config.TrileafMonitorConfig.PanelConfig;
 import com.trileaf.entity.panel.PanelBaseResponse;
 import com.trileaf.entity.panel.mcsm.request.MCSManagerRequest;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
+
+import java.util.List;
 
 /**
  * 面板处理器抽象类
@@ -15,6 +18,7 @@ import okhttp3.RequestBody;
 public abstract class AbstractPanelHandler implements PanelHandler {
     protected final TrileafMonitorConfig config;
     protected final OkHttpClient okHttpClient;
+    private PanelConfig panelConfig;  // 缓存厂商配置信息
 
     public AbstractPanelHandler(TrileafMonitorConfig config, OkHttpClient okHttpClient) {
         this.config = config;
@@ -29,20 +33,44 @@ public abstract class AbstractPanelHandler implements PanelHandler {
      * @author 徐亚松 2025/3/28 09:49
      */
     protected String getBaseUrl(String panelType) {
-        TrileafMonitorConfig.PanelConfig panelConfig = this.getPanelConfig(panelType);
+        PanelConfig panelConfig = this.getPanelConfig(panelType);
         return panelConfig.getBaseUrl();
     }
 
+
     /**
-     * 获取当前面板的配置信息
+     * 获取当前面板的厂商配置信息（懒加载）
+     *
+     * @param vendor 厂商名称
+     * @return {@link PanelConfig}
+     * @author 徐亚松
+     * <p>2025-04-01 22:46</p>
+     */
+    protected PanelConfig getPanelConfig(String vendor) {
+        if (panelConfig == null || !vendor.equals(panelConfig.getVendor())) {
+            panelConfig = loadVendorConfig(getPanelType(), vendor);
+        }
+        return panelConfig;
+    }
+
+    /**
+     * 加载厂商配置
      *
      * @param panelType 面板类型
-     * @return {@link TrileafMonitorConfig.PanelConfig}
-     * @author 徐亚松 2025/3/28 10:34
+     * @param vendor    厂商名称
+     * @return {@link PanelConfig}
      */
-    protected TrileafMonitorConfig.PanelConfig getPanelConfig(String panelType) {
-        return config.getPanel().get(panelType);
+    private PanelConfig loadVendorConfig(String panelType, String vendor) {
+        List<PanelConfig> panelConfigs = config.getPanel().get(panelType);
+        if (panelConfigs == null || panelConfigs.isEmpty()) {
+            throw new IllegalArgumentException("未找到面板类型: " + panelType);
+        }
+        return panelConfigs.stream()
+                .filter(config -> vendor.equals(config.getVendor()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("未找到厂商: " + vendor));
     }
+
 
     /**
      * 获取概览信息
@@ -51,7 +79,7 @@ public abstract class AbstractPanelHandler implements PanelHandler {
      * @author 徐亚松 2025/3/28 11:30
      */
     @Override
-    public PanelBaseResponse<?> getOverview() {
+    public PanelBaseResponse<?> getOverview(String vendor) {
         return null;
     }
 
@@ -64,7 +92,7 @@ public abstract class AbstractPanelHandler implements PanelHandler {
      * <p>2025-03-28 22:20</p>
      */
     @Override
-    public PanelBaseResponse<?> getRemoteServiceInstances(MCSManagerRequest param) {
+    public PanelBaseResponse<?> getRemoteServiceInstances(String vendor,MCSManagerRequest param) {
         return null;
     }
 
@@ -76,7 +104,7 @@ public abstract class AbstractPanelHandler implements PanelHandler {
      * @author 徐亚松 2025/3/31 14:40
      */
     @Override
-    public PanelBaseResponse<?> getInstance(MCSManagerRequest param) {
+    public PanelBaseResponse<?> getInstance(String vendor,MCSManagerRequest param) {
         return null;
     }
 
@@ -88,7 +116,7 @@ public abstract class AbstractPanelHandler implements PanelHandler {
      * @author 徐亚松 2025/3/31 14:55
      */
     @Override
-    public PanelBaseResponse<?> getFileList(MCSManagerRequest param) {
+    public PanelBaseResponse<?> getFileList(String vendor,MCSManagerRequest param) {
         return null;
     }
 
@@ -100,7 +128,7 @@ public abstract class AbstractPanelHandler implements PanelHandler {
      * @author 徐亚松 2025/3/31 15:27
      */
     @Override
-    public PanelBaseResponse<?> getFileContent(MCSManagerRequest param,RequestBody body) {
+    public PanelBaseResponse<?> getFileContent(String vendor,MCSManagerRequest param, RequestBody body) {
         return null;
     }
 }

@@ -37,7 +37,11 @@ public class TrileafMonitorConfig {
         /**
          * 面板类型。
          */
-        private String type;
+        private String vendor;
+        /**
+         * 面板版本。
+         */
+        private String panelVersion;
         /**
          * 基础URL，用于构建完整的API请求地址。
          */

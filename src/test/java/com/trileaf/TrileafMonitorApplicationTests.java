@@ -42,7 +42,7 @@ class TrileafMonitorApplicationTests {
         //获取MCSM处理器
         PanelHandler<MCSManagerBaseResponse> panelHandler = factory.getHandler(PanelEM.MCSMANAGER.getValue());
 
-        PanelBaseResponse<MCSManagerBaseResponse> overview = panelHandler.getOverview();
+        PanelBaseResponse<MCSManagerBaseResponse> overview = panelHandler.getOverview("");
 
         OverviewResponse panelData1 = (OverviewResponse) overview.getPanelData();
         log.info(JSON.toJSONString(panelData1));
@@ -57,7 +57,7 @@ class TrileafMonitorApplicationTests {
     @Test
     void getRemoteServiceInstances() {
         MCSManagerRequest param = MCSManagerRequest.builder().remote_uuid("3a8c564899ac4e47ba2dba53fe87977e").page(1).page_size(144).instance_name("Xu_test").status("3").build();
-        PanelBaseResponse<MCSManagerBaseResponse> responseData = panelHandler.getRemoteServiceInstances(param);
+        PanelBaseResponse<MCSManagerBaseResponse> responseData = panelHandler.getRemoteServiceInstances("",param);
         RemoteServiceInstancesResponse response = (RemoteServiceInstancesResponse) responseData.getPanelData();
         log.info(JSON.toJSONString(response));
     }
@@ -73,7 +73,7 @@ class TrileafMonitorApplicationTests {
         MCSManagerRequest param = MCSManagerRequest.builder()
                 .remote_uuid("3a8c564899ac4e47ba2dba53fe87977e")
                 .uuid("cf95d0dc627e40f0bf4dddbf92a4b66e").build();
-        PanelBaseResponse<MCSManagerBaseResponse> responseData = panelHandler.getInstance(param);
+        PanelBaseResponse<MCSManagerBaseResponse> responseData = panelHandler.getInstance("",param);
         InstanceDetailResponse response = (InstanceDetailResponse) responseData.getPanelData();
         log.info(JSON.toJSONString(response));
     }
@@ -94,7 +94,7 @@ class TrileafMonitorApplicationTests {
                 .page(0)
                 .page_size(20)
                 .build();
-        PanelBaseResponse<MCSManagerBaseResponse> responseData = panelHandler.getFileList(param);
+        PanelBaseResponse<MCSManagerBaseResponse> responseData = panelHandler.getFileList("",param);
         FileListResponse response = (FileListResponse) responseData.getPanelData();
         log.info(JSON.toJSONString(response));
     }
@@ -117,7 +117,7 @@ class TrileafMonitorApplicationTests {
         jsonObject.put("target", "/mods/FallingTree-1.20.1-4.3.4.jar");
         RequestBody requestBody = RequestBody.create(MediaType.get("application/json; charset=utf-8"), jsonObject.toJSONString());
 
-        PanelBaseResponse<MCSManagerBaseResponse> responseData = panelHandler.getFileContent(param, requestBody);
+        PanelBaseResponse<MCSManagerBaseResponse> responseData = panelHandler.getFileContent("",param, requestBody);
         FileContentResponse response = (FileContentResponse) responseData.getPanelData();
         log.info(JSON.toJSONString(response));
     }
