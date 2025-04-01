@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -19,13 +20,12 @@ import java.util.Map;
 @Data
 @Slf4j
 public class TrileafMonitorConfig {
-    private Map<String, PanelConfig> panel = new HashMap<>();
+    private Map<String, List<PanelConfig>> panel;
 
     @PostConstruct
     public void logConfig() {
         log.info("Loaded TrileafMonitorConfig: {}", JSONObject.toJSONString(panel));
     }
-
     /**
      * 统一面板属性类
      *
