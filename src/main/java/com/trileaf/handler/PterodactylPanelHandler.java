@@ -16,8 +16,6 @@ import org.springframework.stereotype.Service;
 @Component
 public class PterodactylPanelHandler extends AbstractPanelHandler {
 
-    private final TrileafMonitorConfig.PanelConfig panelConfig = super.getPanelConfig(this.getPanelType());
-
     public PterodactylPanelHandler(TrileafMonitorConfig config, OkHttpClient okHttpClient) {
         super(config, okHttpClient);
     }

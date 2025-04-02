@@ -6,7 +6,7 @@ trileaf:
   monitor:
     panel:
       MCSManager:
-        - vendor: 供应商1
+        - vendor: HuYe
           panelVersion: 0.0.1
           baseUrl: http://211.154.16.45:23333 # 基础URL
           apiKey: 658173b28adc43c2b4032312bd88fdf8 # API密钥
@@ -28,9 +28,9 @@ trileaf:
             fileContent: /files
             # 解压文件的API路径
             decompress: /files/compress
-        - vendor: 供应商2
-          baseUrl: http://211.154.16.45:23333 # 基础URL
-          apiKey: 658173b28adc43c2b4032312bd88fdf8 # API密钥
+        - vendor: Xuuu
+          baseUrl: http://122.51.104.190:23333 # 基础URL
+          apiKey: 77a372248d7649849c24a9ee8bca1318 # API密钥
           # 所有API路径的集合
           apiPaths:
             # 所有API请求的基础前缀

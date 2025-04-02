@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 @Service
 public class MCSManagerPanelHandler extends AbstractPanelHandler {
 
-    private final TrileafMonitorConfig.PanelConfig panelConfig = super.getPanelConfig(this.getPanelType());
 
     public MCSManagerPanelHandler(TrileafMonitorConfig config, OkHttpClient okHttpClient) {
         super(config, okHttpClient);
@@ -129,7 +128,7 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
         try {
             Map<String, String> queryParams = this.convertRequestToQueryParams(param);
             FileListResponse data = this.executeRequest(
-                    panelConfig.getApiPaths().getFileList(),
+                    super.getPanelConfig(vendor).getApiPaths().getFileList(),
                     "GET", queryParams,
                     null, FileListResponse.class,vendor);
             return new PanelBaseResponse<>(this.getPanelType(), data);
@@ -244,7 +243,7 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
         URIBuilder uriBuilder = new URIBuilder(baseUrl)
                 .setPath("/" + fullPath)
                 // 固定添加一个apikey参数
-                .addParameter("apikey", this.panelConfig.getApiKey());
+                .addParameter("apikey", panelConfig.getApiKey());
 
         // 添加额外的 query 参数（如果有）
         if (queryParams != null) {

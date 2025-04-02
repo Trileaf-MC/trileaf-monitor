@@ -42,10 +42,14 @@ class TrileafMonitorApplicationTests {
         //获取MCSM处理器
         PanelHandler<MCSManagerBaseResponse> panelHandler = factory.getHandler(PanelEM.MCSMANAGER.getValue());
 
-        PanelBaseResponse<MCSManagerBaseResponse> overview = panelHandler.getOverview("");
+        PanelBaseResponse<MCSManagerBaseResponse> HuYeOverview = panelHandler.getOverview("HuYe");
+        PanelBaseResponse<MCSManagerBaseResponse> XuuuOverview = panelHandler.getOverview("Xuuu");
 
-        OverviewResponse panelData1 = (OverviewResponse) overview.getPanelData();
-        log.info(JSON.toJSONString(panelData1));
+        OverviewResponse HuYePanelData = (OverviewResponse) HuYeOverview.getPanelData();
+        log.info(JSON.toJSONString(HuYePanelData));
+
+        OverviewResponse XuuuPanelData = (OverviewResponse) XuuuOverview.getPanelData();
+        log.info(JSON.toJSONString(XuuuPanelData));
     }
 
     /**
