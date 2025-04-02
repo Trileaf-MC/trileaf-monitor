@@ -6,6 +6,7 @@ import com.trileaf.entity.panel.PanelBaseResponse;
 import com.trileaf.entity.panel.mcsm.request.MCSManagerRequest;
 import com.trileaf.entity.panel.mcsm.response.*;
 import com.trileaf.factory.PanelEM;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -29,6 +30,7 @@ import java.util.stream.Stream;
  * 2025/3/27 15:17
  */
 @Service
+@Slf4j
 public class MCSManagerPanelHandler extends AbstractPanelHandler {
 
 
@@ -58,6 +60,7 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
     @Override
     public PanelBaseResponse<OverviewResponse> getOverview(String vendor) {
         try {
+            this.validateVendor(vendor); // 先校验 vendor 是否为空
             OverviewResponse data = this.executeRequest(
                     super.getPanelConfig(vendor).getApiPaths().getOverview(),
                     "GET", null,
@@ -65,10 +68,12 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
             return new PanelBaseResponse<>(this.getPanelType(), data);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("获取概览信息 调用失败, 厂商: {}", vendor, e);
         }
         return null;
     }
+
+
 
     /**
      * 获取实例列表
@@ -81,6 +86,7 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
     @Override
     public PanelBaseResponse<RemoteServiceInstancesResponse> getRemoteServiceInstances(String vendor,MCSManagerRequest param) {
         try {
+            this.validateVendor(vendor); // 先校验 vendor 是否为空
             Map<String, String> queryParams = this.convertRequestToQueryParams(param);
             RemoteServiceInstancesResponse data = this.executeRequest(
                     super.getPanelConfig(vendor).getApiPaths().getInstancesList(),
@@ -88,7 +94,7 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
                     null, RemoteServiceInstancesResponse.class,vendor);
             return new PanelBaseResponse<>(this.getPanelType(), data);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("获取实例列表 调用失败, 厂商: {}", vendor, e);
         }
         return null;
     }
@@ -104,6 +110,7 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
     @Override
     public PanelBaseResponse<InstanceDetailResponse> getInstance(String vendor,MCSManagerRequest param) {
         try {
+            this.validateVendor(vendor); // 先校验 vendor 是否为空
             Map<String, String> queryParams = this.convertRequestToQueryParams(param);
             InstanceDetailResponse data = this.executeRequest(
                     super.getPanelConfig(vendor).getApiPaths().getInstanceDetail(),
@@ -111,7 +118,7 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
                     null, InstanceDetailResponse.class,vendor);
             return new PanelBaseResponse<>(this.getPanelType(), data);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("获取实例详情 调用失败, 厂商: {}", vendor, e);
         }
         return null;
     }
@@ -126,6 +133,7 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
     @Override
     public PanelBaseResponse<FileListResponse> getFileList(String vendor,MCSManagerRequest param) {
         try {
+            this.validateVendor(vendor); // 先校验 vendor 是否为空
             Map<String, String> queryParams = this.convertRequestToQueryParams(param);
             FileListResponse data = this.executeRequest(
                     super.getPanelConfig(vendor).getApiPaths().getFileList(),
@@ -133,7 +141,7 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
                     null, FileListResponse.class,vendor);
             return new PanelBaseResponse<>(this.getPanelType(), data);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("获取文库列表 调用失败, 厂商: {}", vendor, e);
         }
         return null;
     }
@@ -148,6 +156,7 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
     @Override
     public PanelBaseResponse<FileContentResponse> getFileContent(String vendor,MCSManagerRequest param, RequestBody body) {
         try {
+            this.validateVendor(vendor); // 先校验 vendor 是否为空
             Map<String, String> queryParams = this.convertRequestToQueryParams(param);
             FileContentResponse data = this.executeRequest(
                     super.getPanelConfig(vendor).getApiPaths().getFileContent(),
@@ -155,7 +164,7 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
                     body, FileContentResponse.class,vendor);
             return new PanelBaseResponse<>(this.getPanelType(), data);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("获取文件内容 调用失败, 厂商: {}", vendor, e);
         }
         return null;
     }
@@ -180,7 +189,7 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
                 }
             }
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            log.error("反射将对象转为map参数 失败, 参数: {}", param, e);
         }
         return queryParams;
     }
@@ -198,7 +207,7 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
         TrileafMonitorConfig.PanelConfig panelConfig = super.getPanelConfig(vendor);
         // 构造完整 URL，同时添加固定的apikey参数及其他query参数
         String url = this.buildApiUri(apiPath, queryParams,panelConfig);
-        System.out.println(url);
+        log.info("请求 URL: {}", url);
         // 创建请求构造器
         Request.Builder builder = new Request.Builder().url(url);
 
@@ -213,12 +222,16 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
         Request request = builder.build();
 
         try (Response response = okHttpClient.newCall(request).execute()) {
-            Assert.isTrue(response.isSuccessful(),
-                    MessageFormat.format("Unexpected HTTP response code: {0}, message: {1}", response.code(), response.message()));
-
+            if (!response.isSuccessful()) {
+                log.error("请求失败: HTTP {} - {}", response.code(), response.message());
+                return null;
+            }
+            if (response.body() == null) {
+                log.warn("响应体为空: {}", url);
+                return null;
+            }
             String responseBody = response.body().string();
-            T t = JSON.parseObject(responseBody, responseType);
-            return t;
+            return JSON.parseObject(responseBody, responseType);
         }
     }
 
@@ -234,23 +247,36 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
         String baseUrl = panelConfig.getBaseUrl();
         String prefix = panelConfig.getApiPaths().getPrefix();
 
-        // 处理路径拼接（自动处理多余的斜杠）
+        // 规范化路径，确保不会有多余的 '/'
         String fullPath = Stream.of(prefix, apiPath)
-                .map(s -> s.replaceAll("^/+|/+$", ""))
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.joining("/"));
+                .filter(s -> s != null && !s.isEmpty())
+                .map(s -> s.replaceAll("^/+", "").replaceAll("/+$", "")) // 去除前后 '/'
+                .collect(Collectors.joining("/")); // 确保拼接时不会产生额外的 '/'
 
-        URIBuilder uriBuilder = new URIBuilder(baseUrl)
-                .setPath("/" + fullPath)
-                // 固定添加一个apikey参数
+        // 确保 baseUrl 结尾没有 '/'，避免 URIBuilder 解析异常
+        if (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+
+        // 构建 URI
+        URIBuilder uriBuilder = new URIBuilder(baseUrl + "/" + fullPath)
                 .addParameter("apikey", panelConfig.getApiKey());
 
         // 添加额外的 query 参数（如果有）
         if (queryParams != null) {
-            for (Map.Entry<String, String> entry : queryParams.entrySet()) {
-                uriBuilder.addParameter(entry.getKey(), entry.getValue());
-            }
+            queryParams.forEach(uriBuilder::addParameter);
         }
         return uriBuilder.build().toString();
+    }
+
+    /**
+     * 参数非空校验
+     * @param vendor 厂商名称
+     *
+     * @author 徐亚松
+     * <p>2025-04-02 18:59</p>
+     */
+    private void validateVendor(String vendor) {
+        Assert.hasText(vendor, "厂商标识 (vendor) 不能为空");
     }
 }

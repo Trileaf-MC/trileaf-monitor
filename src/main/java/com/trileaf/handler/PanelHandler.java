@@ -32,7 +32,7 @@ public interface PanelHandler<T> {
      * 获取实例列表
      *
      * @param vendor 厂商
-     * @param param 请求参数
+     * @param param  请求参数
      * @return {@link PanelBaseResponse}
      * @author 徐亚松
      * <p>2025-03-28 22:20</p>
@@ -43,7 +43,7 @@ public interface PanelHandler<T> {
      * 获取实例详情
      *
      * @param vendor 厂商
-     * @param param 请求参数
+     * @param param  请求参数
      * @return {@link PanelBaseResponse}
      * @author 徐亚松
      * <p>2025-03-28 22:20</p>
@@ -54,7 +54,7 @@ public interface PanelHandler<T> {
      * 获取文库列表
      *
      * @param vendor 厂商
-     * @param param 请求参数
+     * @param param  请求参数
      * @return {@link PanelBaseResponse<T>}
      * @author 徐亚松 2025/3/31 14:55
      */
@@ -69,6 +69,18 @@ public interface PanelHandler<T> {
      * @return {@link PanelBaseResponse<T>}
      * @author 徐亚松
      * <p>2025-04-01 22:51</p>
+     */
+    PanelBaseResponse<T> getFileContent(String vendor, MCSManagerRequest param, RequestBody body);
+
+    /**
+     * 解压文件
+     *
+     * @param vendor 厂商
+     * @param param  请求参数
+     * @param body   body参数
+     * @return {@link PanelBaseResponse<T>}
+     * @author 徐亚松
+     * <p>2025-04-02 19:02</p>
      */
     PanelBaseResponse<T> getFileContent(String vendor, MCSManagerRequest param, RequestBody body);
 

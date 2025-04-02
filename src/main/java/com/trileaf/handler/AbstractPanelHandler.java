@@ -6,6 +6,7 @@ import com.trileaf.entity.panel.PanelBaseResponse;
 import com.trileaf.entity.panel.mcsm.request.MCSManagerRequest;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
+import org.springframework.util.Assert;
 
 import java.util.List;
 
@@ -25,21 +26,9 @@ public abstract class AbstractPanelHandler implements PanelHandler {
         this.okHttpClient = okHttpClient;
     }
 
-    /**
-     * 构建基础Url
-     *
-     * @param panelType 面板类型
-     * @return {@link String}
-     * @author 徐亚松 2025/3/28 09:49
-     */
-    protected String getBaseUrl(String panelType) {
-        PanelConfig panelConfig = this.getPanelConfig(panelType);
-        return panelConfig.getBaseUrl();
-    }
-
 
     /**
-     * 获取当前面板的厂商配置信息（懒加载）
+     * 获取当前面板的厂商配置信息
      *
      * @param vendor 厂商名称
      * @return {@link PanelConfig}
@@ -62,9 +51,7 @@ public abstract class AbstractPanelHandler implements PanelHandler {
      */
     private PanelConfig loadVendorConfig(String panelType, String vendor) {
         List<PanelConfig> panelConfigs = config.getPanel().get(panelType);
-        if (panelConfigs == null || panelConfigs.isEmpty()) {
-            throw new IllegalArgumentException("未找到面板类型: " + panelType);
-        }
+        Assert.notEmpty(panelConfigs, "未找到面板类型: " + panelType);
         return panelConfigs.stream()
                 .filter(config -> vendor.equals(config.getVendor()))
                 .findFirst()
