@@ -118,4 +118,19 @@ public abstract class AbstractPanelHandler implements PanelHandler {
     public PanelBaseResponse<?> getFileContent(String vendor,MCSManagerRequest param, RequestBody body) {
         return null;
     }
+
+    /**
+     * 解压文件
+     *
+     * @param vendor 厂商
+     * @param param  请求参数
+     * @param body   body参数
+     * @return {@link PanelBaseResponse<?>}
+     * @author 徐亚松
+     * <p>2025-04-03 16:06</p>
+     */
+    @Override
+    public PanelBaseResponse<?> decompress(String vendor, MCSManagerRequest param, RequestBody body) {
+        return null;
+    }
 }

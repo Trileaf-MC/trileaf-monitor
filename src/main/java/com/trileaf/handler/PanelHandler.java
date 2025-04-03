@@ -80,8 +80,8 @@ public interface PanelHandler<T> {
      * @param body   body参数
      * @return {@link PanelBaseResponse<T>}
      * @author 徐亚松
-     * <p>2025-04-02 19:02</p>
+     * <p>2025-04-03 16:06</p>
      */
-    PanelBaseResponse<T> getFileContent(String vendor, MCSManagerRequest param, RequestBody body);
+    PanelBaseResponse<T> decompress(String vendor, MCSManagerRequest param, RequestBody body);
 
 }

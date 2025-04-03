@@ -170,6 +170,32 @@ public class MCSManagerPanelHandler extends AbstractPanelHandler {
     }
 
     /**
+     * 解压文件
+     *
+     * @param vendor 厂商
+     * @param param  请求参数
+     * @param body   body参数
+     * @return {@link PanelBaseResponse<?>}
+     * @author 徐亚松
+     * <p>2025-04-03 16:06</p>
+     */
+    @Override
+    public PanelBaseResponse<DecompressResponse> decompress(String vendor, MCSManagerRequest param, RequestBody body) {
+        try {
+            this.validateVendor(vendor); // 先校验 vendor 是否为空
+            Map<String, String> queryParams = this.convertRequestToQueryParams(param);
+            DecompressResponse data = this.executeRequest(
+                    super.getPanelConfig(vendor).getApiPaths().getDecompress(),
+                    "POST", queryParams,
+                    body, DecompressResponse.class,vendor);
+            return new PanelBaseResponse<>(this.getPanelType(), data);
+        } catch (Exception e) {
+            log.error("解压文件 调用失败, 厂商: {}", vendor, e);
+        }
+        return null;
+    }
+
+    /**
      * 反射将对象转为map参数
      *
      * @param param 参数
