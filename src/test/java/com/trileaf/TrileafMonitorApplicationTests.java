@@ -126,4 +126,33 @@ class TrileafMonitorApplicationTests {
         log.info(JSON.toJSONString(response));
     }
 
+
+
+    /**
+     * 获取文件内容
+     *
+     * @author 徐亚松
+     * 2025/3/31 16:05
+     */
+    @Test
+    void decompress() {
+        MCSManagerRequest param = MCSManagerRequest.builder()
+                .remote_uuid("3a8c564899ac4e47ba2dba53fe87977e")
+                .uuid("cf95d0dc627e40f0bf4dddbf92a4b66e")
+                .build();
+
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("type", 2);
+        jsonObject.put("targets", "/cache/FallingTree");
+        jsonObject.put("code", "utf-8"); // 压缩文件的编码
+        jsonObject.put("source", "/mods/FallingTree-1.20.1-4.3.4.jar"); // 压缩文件路径
+
+        System.out.println(JSONObject.toJSONString(jsonObject));
+        RequestBody requestBody = RequestBody.create(MediaType.get("application/json; charset=utf-8"), jsonObject.toJSONString());
+
+        PanelBaseResponse<MCSManagerBaseResponse> responseData = panelHandler.decompress("HuYe",param, requestBody);
+        DecompressResponse response = (DecompressResponse) responseData.getPanelData();
+        log.info(JSON.toJSONString(response));
+    }
+
 }

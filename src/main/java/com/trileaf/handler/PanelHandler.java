@@ -82,6 +82,6 @@ public interface PanelHandler<T> {
      * @author 徐亚松
      * <p>2025-04-02 19:02</p>
      */
-    PanelBaseResponse<T> getFileContent(String vendor, MCSManagerRequest param, RequestBody body);
+    PanelBaseResponse<T> decompress(String vendor, MCSManagerRequest param, RequestBody body);
 
 }
