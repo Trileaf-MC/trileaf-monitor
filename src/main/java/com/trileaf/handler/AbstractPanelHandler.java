@@ -127,7 +127,7 @@ public abstract class AbstractPanelHandler implements PanelHandler {
      * @param body   body参数
      * @return {@link PanelBaseResponse<?>}
      * @author 徐亚松
-     * <p>2025-04-02 19:02</p>
+     * <p>2025-04-03 16:06</p>
      */
     @Override
     public PanelBaseResponse<?> decompress(String vendor, MCSManagerRequest param, RequestBody body) {

@@ -4,10 +4,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 解压文件响应内容
+ * 解压文件响应
  *
  * @author 徐亚松
- * 2025/4/3 10:36
+ * 2025/4/3 16:07
  */
 @EqualsAndHashCode(callSuper = true)
 @Data

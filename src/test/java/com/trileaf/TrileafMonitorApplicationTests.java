@@ -128,6 +128,7 @@ class TrileafMonitorApplicationTests {
 
 
 
+
     /**
      * 获取文件内容
      *
@@ -142,12 +143,12 @@ class TrileafMonitorApplicationTests {
                 .build();
 
         JSONObject jsonObject = new JSONObject();
+        //jsonObject.put("target", "/eula.txt");
         jsonObject.put("type", 2);
+        jsonObject.put("code", "utf-8");
+        jsonObject.put("source", "/mods/FallingTree-1.20.1-4.3.4.jar");
         jsonObject.put("targets", "/cache/FallingTree");
-        jsonObject.put("code", "utf-8"); // 压缩文件的编码
-        jsonObject.put("source", "/mods/FallingTree-1.20.1-4.3.4.jar"); // 压缩文件路径
 
-        System.out.println(JSONObject.toJSONString(jsonObject));
         RequestBody requestBody = RequestBody.create(MediaType.get("application/json; charset=utf-8"), jsonObject.toJSONString());
 
         PanelBaseResponse<MCSManagerBaseResponse> responseData = panelHandler.decompress("HuYe",param, requestBody);
