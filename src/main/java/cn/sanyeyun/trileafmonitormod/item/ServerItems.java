@@ -1,12 +1,20 @@
 package cn.sanyeyun.trileafmonitormod.item;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
+import java.util.Scanner;
 
 public class ServerItems {
+
+    private static final String SERVER_URL = "https://your-server.com/api/hash"; // 你的目标服务器地址
+
+    // 获取服务器信息的 JSON 数据
     public static JsonObject getServerInfoJson() {
         JsonObject json = new JsonObject();
 
@@ -25,7 +33,7 @@ public class ServerItems {
             boolean onlineMode = Boolean.parseBoolean(prop.getProperty("online-mode", "true"));
             boolean whiteList = Boolean.parseBoolean(prop.getProperty("white-list", "false"));
             String gamedown = prop.getProperty("gamemode", "0");
-            String diffculty = prop.getProperty("diffculty", "正常");
+            String difficulty = prop.getProperty("diffculty", "正常");
 
             // 获取并添加到 JSON
             json.addProperty("服务器名称", serverName);
@@ -36,17 +44,8 @@ public class ServerItems {
             json.addProperty("是否开启白名单", whiteList);
             json.addProperty("服务器类型", serverType);
             json.addProperty("游戏模式", gamedown);
-            json.addProperty("难度", diffculty);
-
-            // 创建 MinecraftServer 对象并获取服务器信息
-            MinecraftServer minecraftServer = new MinecraftServer(ipAddress, Integer.parseInt(port));
-            JsonObject serverData = minecraftServer.fetchServerData();
-
-            if (serverData.has("error")) {
-                json.addProperty("error", serverData.get("error").getAsString());
-            } else {
-                json.add("服务器数据", serverData);
-            }
+            json.addProperty("难度", difficulty);
+            json.addProperty("游戏版本", getServerVersion());
 
         } catch (IOException e) {
             json.addProperty("error", "读取 server.properties 失败：" + e.getMessage());
@@ -88,6 +87,7 @@ public class ServerItems {
         return "未知版本";
     }
 
+    // 获取公网 IP 地址
     public static String getPublicIp() {
         String[] apis = {
                 "https://api.ipify.org?format=text", // ipify
@@ -115,5 +115,61 @@ public class ServerItems {
         }
 
         return "无法获取公网 IP";
+    }
+
+    // 发送服务器信息的 JSON 数据到目标服务器
+    public static void sendServerInfoToServer(JsonObject serverInfoJson) {
+        if (serverInfoJson == null) return;
+
+        // 将服务器信息转换为 JSON 字符串
+        String jsonStr = serverInfoJson.toString();
+
+        try {
+            URL url = new URL(SERVER_URL);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+
+            // 获取Authorization Token
+            String token = getAuthorizationToken();
+            if (token != null) {
+                // 设置请求头
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setRequestProperty("Authorization", token);  // 使用从JSON中获取的 token
+            } else {
+                System.err.println("未能读取到Token，发送请求时将无法进行身份验证！");
+            }
+
+            // 启用输出流以发送请求体
+            connection.setDoOutput(true);
+
+            // 发送请求体数据
+            connection.getOutputStream().write(jsonStr.getBytes(StandardCharsets.UTF_8));
+            connection.getOutputStream().flush();
+
+            // 获取服务器响应
+            int responseCode = connection.getResponseCode();
+            System.out.println("服务器响应码:" + responseCode);
+            if (responseCode == 200) {
+                try (Scanner scanner = new Scanner(connection.getInputStream())) {
+                    while (scanner.hasNextLine()) {
+                        System.out.println(" 服务器响应: " + scanner.nextLine());
+                    }
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("发送失败");
+            e.printStackTrace();
+        }
+    }
+
+    // 从 mod.json 文件中获取 Authorization Token
+    private static String getAuthorizationToken() {
+        try (FileReader reader = new FileReader("config/TrilefCertification.json")) {
+            JsonObject jsonObject = JsonParser.parseReader(reader).getAsJsonObject();
+            return jsonObject.get("authorization").getAsString();  // 从 JSON 中获取 "authorization" 字段
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;  // 如果读取失败，则返回 null
+        }
     }
 }
