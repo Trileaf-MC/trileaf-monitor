@@ -1,4 +1,4 @@
-package cn.sanyeyun.trileafmonitormod.item;
+package cn.sanyeyun.item;
 
 import org.apache.commons.codec.digest.DigestUtils;
 

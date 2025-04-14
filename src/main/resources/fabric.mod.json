@@ -16,13 +16,13 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"cn.sanyeyun.trileafmonitormod.TrileafMonitorMod"
+          "cn.sanyeyun.TrileafMonitorMod"
 		],
 		"client": [
-			"cn.sanyeyun.trileafmonitormod.TrileafMonitorModClient"
+          "cn.sanyeyun.TrileafMonitorModClient"
 		],
 		"fabric-datagen": [
-			"cn.sanyeyun.trileafmonitormod.TrileafMonitorModDataGenerator"
+          "cn.sanyeyun.TrileafMonitorModDataGenerator"
 		]
 	},
 	"mixins": [

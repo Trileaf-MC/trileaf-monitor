@@ -3,7 +3,7 @@
 	"package": "cn.sanyeyun.trileafmonitormod.mixin",
 	"compatibilityLevel": "JAVA_17",
 	"mixins": [
-      "TrileafMonitorMixin"
+      "cn.sanyeyun.mixin.TrileafMonitorMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

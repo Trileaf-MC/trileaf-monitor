@@ -1,14 +1,14 @@
-package cn.sanyeyun.trileafmonitormod;
+package cn.sanyeyun;
 
-import cn.sanyeyun.trileafmonitormod.item.ModItems;
-import cn.sanyeyun.trileafmonitormod.item.PluginUtils;
-import cn.sanyeyun.trileafmonitormod.item.ServerItems;
-import cn.sanyeyun.trileafmonitormod.item.TokenJsonGenerator;
+import cn.sanyeyun.item.ModItems;
+import cn.sanyeyun.item.PluginUtils;
+import cn.sanyeyun.item.ServerItems;
+import cn.sanyeyun.item.TokenJsonGenerator;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static cn.sanyeyun.trileafmonitormod.item.TokenJsonGenerator.generateRandomToken;
+import static cn.sanyeyun.item.TokenJsonGenerator.generateRandomToken;
 
 public class TrileafMonitorMod implements ModInitializer {
 	public static final String MOD_ID = "trileaf-monitor-mod";

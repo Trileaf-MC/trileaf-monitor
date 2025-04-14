@@ -1,4 +1,4 @@
-package cn.sanyeyun.trileafmonitormod;
+package cn.sanyeyun;
 
 import net.fabricmc.api.ClientModInitializer;
 
