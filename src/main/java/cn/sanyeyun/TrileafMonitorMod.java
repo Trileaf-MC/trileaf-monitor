@@ -1,5 +1,6 @@
 package cn.sanyeyun;
 
+import cn.sanyeyun.command.TrileafCommand;
 import cn.sanyeyun.event.PlayerEventListener;
 import cn.sanyeyun.event.ServerEventListener;
 import cn.sanyeyun.utils.ConfigFileManager;
@@ -18,6 +19,7 @@ public class TrileafMonitorMod implements ModInitializer {
         ConfigFileManager.loader();
         ServerEventListener.register();
         PlayerEventListener.register();
+        TrileafCommand.register(); // ← 注册命令
         // ConfigFileManager.createTokenJsonFile(generateRandomToken());
     }
 }
