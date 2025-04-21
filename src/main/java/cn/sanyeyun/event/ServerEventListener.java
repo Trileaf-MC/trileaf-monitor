@@ -57,6 +57,7 @@ public class ServerEventListener {
         // 转为服务端的配置文件
         if (server instanceof DedicatedServer dedicatedServer) {
             ServerPropertiesHandler properties = dedicatedServer.getProperties();
+
             GlobalCache.setServerPort((long) properties.serverPort);
             info.setServerPort((long) properties.serverPort);
             info.setGameMode(properties.gameMode.getName());
@@ -77,7 +78,7 @@ public class ServerEventListener {
         info.setServerIp(publicIp);
         info.setCurrentPlayers((long) server.getCurrentPlayerCount());
         info.setMaxPlayers((long) server.getMaxPlayerCount());
-
+        info.setJavaVersion(System.getProperty("java.version"));
         // 图标
         /*Path iconPath = Paths.get("server-icon.png");
         if (Files.exists(iconPath)) {

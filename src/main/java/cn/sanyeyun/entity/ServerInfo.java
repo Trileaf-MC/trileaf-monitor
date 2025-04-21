@@ -53,6 +53,8 @@ public class ServerInfo {
     private Integer isOpen;
     /** 核心类型 */
     private String coreType;
+    /** Java版本 */
+    private String javaVersion;
     /** 核心版本号 */
     private String coreVersion;
 }
