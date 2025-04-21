@@ -38,37 +38,9 @@ public class GlobalCache {
     @Setter
     public static class TrileafCertification {
         /**
-         * 服务器名称
-         */
-        private String serverName;
-        /**
-         * 密码
-         */
-        private String password;
-        /**
-         * QQ 群号
-         */
-        private String qqGroup;
-        /**
-         * 官方网站地址
-         */
-        private String officialWebsite;
-        /**
-         * 下载链接地址
-         */
-        private String downloadUrl;
-        /**
-         * 下载说明
-         */
-        private String downloadRemarks;
-        /**
          * 授权 header 值
          */
         private String monitorAuth;
-        /**
-         * 是否对外开放
-         */
-        private Boolean isOpen;
     }
 
 

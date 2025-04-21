@@ -79,7 +79,7 @@ public class ServerEventListener {
         info.setMaxPlayers((long) server.getMaxPlayerCount());
 
         // 图标
-        Path iconPath = Paths.get("server-icon.png");
+        /*Path iconPath = Paths.get("server-icon.png");
         if (Files.exists(iconPath)) {
             byte[] bytes;
             try {
@@ -89,16 +89,9 @@ public class ServerEventListener {
             }
             String base64 = Base64.getEncoder().encodeToString(bytes);
             info.setIcon("data:image/png;base64," + base64);
-        }
+        }*/
 
-        // 其他自定义字段
-        info.setQqGroup(GlobalCache.getTrileafCertification().getQqGroup());
-        info.setOfficialWebsite(GlobalCache.getTrileafCertification().getOfficialWebsite());
-        info.setDownloadUrl(GlobalCache.getTrileafCertification().getDownloadUrl());
-        info.setDownloadRemarks(GlobalCache.getTrileafCertification().getDownloadRemarks());
-        info.setPassword(GlobalCache.getTrileafCertification().getPassword());
-        info.setIsOpen(booleanConvertInteger(GlobalCache.getTrileafCertification().getIsOpen()));
-        info.setServerName(GlobalCache.getTrileafCertification().getServerName());
+
         return info;
     }
 
