@@ -1,9 +1,15 @@
 package cn.sanyeyun.event;
 
 import cn.sanyeyun.cache.GlobalCache;
+import cn.sanyeyun.constant.CommonConstants;
+import cn.sanyeyun.entity.ModInfo;
 import cn.sanyeyun.entity.ServerInfo;
+import cn.sanyeyun.entity.response.RuoYiResponse;
+import cn.sanyeyun.enums.PlatformType;
+import cn.sanyeyun.service.ModService;
 import cn.sanyeyun.utils.HttpRequestUtil;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.DedicatedServer;
@@ -11,11 +17,9 @@ import net.minecraft.server.dedicated.ServerPropertiesHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static cn.sanyeyun.constant.CommonConstants.SERVERS_REGISTER;
@@ -28,20 +32,55 @@ import static cn.sanyeyun.constant.CommonConstants.SERVERS_REGISTER;
  **/
 public class ServerEventListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerEventListener.class);
+    private static final Gson GSON = new GsonBuilder().serializeNulls().create();
+
 
     public static void register() {
+        ServerLifecycleEvents.SERVER_STARTING.register((MinecraftServer server) -> {
+            LOGGER.info("服务端启动中,准备获取Mod信息");
+            // 异步执行采集Mod信息
+            CompletableFuture.runAsync(ModService::collectModInfo);
+        });
+
+        ServerLifecycleEvents.SERVER_STOPPING.register((MinecraftServer server) -> {
+            LOGGER.info("服务端关闭中");
+            CompletableFuture.runAsync(()-> HttpRequestUtil.put(CommonConstants.SERVERS_LOG_OUT, null, PlatformType.INTERNAL));
+        });
+
         ServerLifecycleEvents.SERVER_STARTED.register((MinecraftServer server) -> {
             LOGGER.info("服务端已启动,准备获取服务器信息");
             // 异步执行采集与上报逻辑
-            CompletableFuture.runAsync(() -> {
-                try {
-                    HttpRequestUtil.post(SERVERS_REGISTER, new Gson().toJson(buildFrom(server)));
-                } catch (Exception e) {
-                    LOGGER.error("服务器信息上传失败", e);
-                }
-            });
+            CompletableFuture.runAsync(() -> handleServerStarted(server));
         });
+
     }
+
+    /**
+     * 注册服务器信息
+     *
+     * @param server 服务器实例
+     * @author 徐亚松
+     * <p>2025/5/7 21:07</p>
+     */
+    private static void handleServerStarted(MinecraftServer server) {
+        try {
+            String json = GSON.toJson(buildFrom(server));
+            String responseStr = HttpRequestUtil.post(SERVERS_REGISTER, json, PlatformType.INTERNAL);
+            RuoYiResponse response = GSON.fromJson(responseStr, RuoYiResponse.class);
+            // 等待服务器顺利注册后 再去上传Mod信息
+            if (response.isSuccess()) {
+                List<ModInfo> modInfos = GlobalCache.getModInfos();
+                // 获取到Mod后再去请求,否则重新获取Mod
+                if (modInfos != null && !modInfos.isEmpty() ){
+                    HttpRequestUtil.postMultipart(CommonConstants.MOD_REGISTER, GSON.toJson(modInfos), GlobalCache.getCompletelyUnmatchedFiles());
+                }
+            }
+
+        } catch (Exception e) {
+            LOGGER.error("服务器信息上传失败", e);
+        }
+    }
+
 
     /**
      * 构建参数

@@ -1,7 +1,11 @@
 package cn.sanyeyun.cache;
 
+import cn.sanyeyun.entity.ModInfo;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.io.File;
+import java.util.List;
 
 /**
  * 全局缓存类
@@ -17,12 +21,27 @@ public class GlobalCache {
     @Getter
     @Setter
     private static String serverIp;
+
     /**
      * 端口
      */
     @Getter
     @Setter
     private static Long serverPort;
+
+    /**
+     * Mod信息
+     */
+    @Getter
+    @Setter
+    private static List<ModInfo> modInfos;
+
+    /**
+     * Mod文件信息
+     */
+    @Getter
+    @Setter
+    private static List<File> completelyUnmatchedFiles;
 
     /**
      * 配置文件映射对象

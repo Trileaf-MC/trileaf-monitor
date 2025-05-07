@@ -3,12 +3,17 @@ package cn.sanyeyun.event;
 import cn.sanyeyun.cache.GlobalCache;
 import cn.sanyeyun.entity.ServerInfo;
 import cn.sanyeyun.entity.UpdateOnlineCount;
+import cn.sanyeyun.enums.PlatformType;
 import cn.sanyeyun.executor.NextTickExecutor;
+import cn.sanyeyun.service.ModService;
 import cn.sanyeyun.utils.HttpRequestUtil;
 import com.google.gson.Gson;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.TypedActionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +49,18 @@ public class PlayerEventListener {
                 updateOnlineCount(server);
             }, 2);  // 延迟 2 Tick
         });
+
+   /*     UseItemCallback.EVENT.register((player, world, hand) -> {
+            // 获取玩家当前使用的物品
+            ItemStack stack = player.getStackInHand(hand);
+            ModService.collectModInfo();
+
+            // 打印日志
+            // LOGGER.info("玩家 {} 使用了物品：{}", player.getEntityName(), stack.getItem().getName().getString());
+
+            // 返回 TypedActionResult.pass(stack) 以便事件继续执行并返回默认行为
+            return TypedActionResult.pass(stack);
+        });*/
     }
 
     /**
@@ -57,7 +74,7 @@ public class PlayerEventListener {
         // 异步执行
         CompletableFuture.runAsync(() -> {
             try {
-                HttpRequestUtil.put(UPDATE_ONLINE_COUNT, new Gson().toJson(buildFrom(server)));
+                HttpRequestUtil.put(UPDATE_ONLINE_COUNT, new Gson().toJson(buildFrom(server)), PlatformType.INTERNAL);
             } catch (Exception e) {
                 LOGGER.error("在线人数上传失败", e);
             }
