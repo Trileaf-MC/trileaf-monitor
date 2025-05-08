@@ -8,6 +8,7 @@ import cn.sanyeyun.entity.response.RuoYiResponse;
 import cn.sanyeyun.enums.PlatformType;
 import cn.sanyeyun.service.ModService;
 import cn.sanyeyun.utils.HttpRequestUtil;
+import cn.sanyeyun.utils.RetryUtils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -69,10 +70,15 @@ public class ServerEventListener {
             RuoYiResponse response = GSON.fromJson(responseStr, RuoYiResponse.class);
             // 等待服务器顺利注册后 再去上传Mod信息
             if (response.isSuccess()) {
-                List<ModInfo> modInfos = GlobalCache.getModInfos();
-                // 获取到Mod后再去请求,否则重新获取Mod
-                if (modInfos != null && !modInfos.isEmpty() ){
+                List<ModInfo> modInfos = RetryUtils.retryUntilNotNull(() -> {
+                    List<ModInfo> list = GlobalCache.getModInfos();
+                    return (list != null && !list.isEmpty()) ? list : null;
+                }, 5, 5000); // 重试5次，每次间隔5秒
+
+                if (modInfos != null) {
                     HttpRequestUtil.postMultipart(CommonConstants.MOD_REGISTER, GSON.toJson(modInfos), GlobalCache.getCompletelyUnmatchedFiles());
+                } else {
+                    LOGGER.warn("未能在重试后获取到 ModInfos，跳过上传");
                 }
             }
 
