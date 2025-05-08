@@ -305,6 +305,10 @@ public class ModService {
 
         List<Long> modIds = curseForgeResponse.getData().getExactMatches().stream()
                 .map(v -> v.getFile().getId()).toList();
+        // 如果没有 modId，直接返回基础响应
+        if (modIds.isEmpty()) {
+            return curseForgeResponse;
+        }
         JsonObject json1 = new JsonObject();
         JsonArray array1 = new JsonArray();
         modIds.forEach(array1::add);
