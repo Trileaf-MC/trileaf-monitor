@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 public class TrileafMonitorMod implements ModInitializer {
     public static final String MOD_ID = "trileaf-monitor-mod";
-    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    public static final Logger LOGGER = LoggerFactory.getLogger(TrileafMonitorMod.class);
 
     @Override
     public void onInitialize() {
