@@ -1,10 +1,20 @@
 pluginManagement {
 	repositories {
+		gradlePluginPortal()
 		maven {
 			name = 'Fabric'
 			url = 'https://maven.fabricmc.net/'
 		}
+		maven {
+			name = 'MinecraftForge'
+			url = 'https://maven.minecraftforge.net/'
+		}
+		maven {
+			url = "https://libraries.minecraft.net/"
+		}
 		mavenCentral()
-		gradlePluginPortal()
 	}
 }
+
+rootProject.name = 'trileaf-monitor'
+include 'common', 'fabric', 'forge'

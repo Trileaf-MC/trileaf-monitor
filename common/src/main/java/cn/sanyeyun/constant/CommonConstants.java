@@ -1,11 +1,14 @@
 package cn.sanyeyun.constant;
 
+import lombok.Data;
+
 /**
  * 常量
  *
  * @author 徐亚松
  * 2025-04-14 14:37
  **/
+@Data
 public class CommonConstants {
     // 后台请求头
     public static final String HEADER_AUTHORIZATION = "monitorAuth"; // 自定义头部字段

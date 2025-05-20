@@ -5,15 +5,11 @@ import cn.sanyeyun.entity.ServerInfo;
 import cn.sanyeyun.entity.UpdateOnlineCount;
 import cn.sanyeyun.enums.PlatformType;
 import cn.sanyeyun.executor.NextTickExecutor;
-import cn.sanyeyun.service.ModService;
 import cn.sanyeyun.utils.HttpRequestUtil;
 import com.google.gson.Gson;
-import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.TypedActionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

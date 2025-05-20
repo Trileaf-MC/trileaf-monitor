@@ -351,7 +351,7 @@ public class ModService {
      *
      * @param murmurMap murmur指纹集合
      * @param response  forge响应
-     * @return {@link java.util.List<java.io.File>}
+     * @return {@link List< File>}
      * @author 徐亚松
      * <p>2025/5/7 19:16</p>
      */

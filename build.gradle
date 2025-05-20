@@ -1,4 +1,37 @@
 plugins {
+	id 'java'
+}
+
+subprojects {
+	apply plugin: 'java'
+
+	group = project.maven_group
+	version = project.mod_version
+
+	repositories {
+		mavenCentral()
+		maven { url = 'https://maven.fabricmc.net/' }
+		maven { url = 'https://files.minecraftforge.net/maven' }
+	}
+
+	dependencies {
+		// 所有子模块共享的依赖（如 lombok）
+		compileOnly 'org.projectlombok:lombok:1.18.30'
+		annotationProcessor 'org.projectlombok:lombok:1.18.30'
+	}
+
+	java {
+		withSourcesJar()
+		sourceCompatibility = JavaVersion.VERSION_17
+		targetCompatibility = JavaVersion.VERSION_17
+	}
+}
+
+
+
+/*
+
+plugins {
 	id 'fabric-loom' version '1.10-SNAPSHOT'
 	id 'maven-publish'
 }
@@ -85,3 +118,4 @@ publishing {
 		// retrieving dependencies.
 	}
 }
+*/

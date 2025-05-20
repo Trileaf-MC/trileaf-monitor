@@ -18,8 +18,6 @@ import net.minecraft.server.dedicated.ServerPropertiesHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
