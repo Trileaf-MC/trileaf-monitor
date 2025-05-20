@@ -231,7 +231,7 @@ publishing {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }
-// 将 common 模块的 class 文件打包到 Forge 的 JAR 中
+// 将 common 模块的 class 文件打包到 Forge 的 JAR 中 TODO 可能有点问题 项目一直起不来， 不加这个直接会报common模块的错误 找不到类啥的
 jar {
     from project(':common').sourceSets.main.output
 }
