@@ -1,120 +1,118 @@
-// ========== 插件配置 ==========
 plugins {
-                        // Eclipse IDE 支持
-    id 'idea'                         // IntelliJ IDEA 支持
-    id 'maven-publish'                // Maven 发布支持
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'  // Forge Gradle 插件
+    id 'idea'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
 }
 
-// ========== 仓库配置 ==========
+// 添加依赖仓库
 repositories {
-    maven { url = "https://maven.minecraftforge.net/" }      // Forge 官方仓库
-    maven { url = "https://libraries.minecraft.net/" }       // Mojang 官方库
-    maven { url = "https://repo.spongepowered.org/repository/maven-public/" }  // Sponge 仓库
-    mavenCentral()  // Maven 中央仓库（可选但推荐）
+    maven { url = "https://maven.minecraftforge.net/" } // Forge 官方仓库
+    maven { url = "https://libraries.minecraft.net/" }   // Minecraft 原版库
+    maven { url = "https://repo.spongepowered.org/repository/maven-public/" } // Sponge 仓库
+    mavenCentral() // 中央仓库（可选但建议添加）
 }
 
-// ========== 项目基本信息 ==========
-version = '1.0'                        // 项目版本号
-group = 'cn.sanyeyun'                 // 项目组ID
-base {
-    archivesName = 'trileaf-monitor-forge'   // 输出文件名
-}
-
-// ========== Java 配置 ==========
-// 1.18+ 版本使用 Java 17，所以你的 mod 应该以 Java 17 为目标
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-
-// 打印当前 Java 环境信息
-println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
-
-// ========== Minecraft 配置 ==========
+// Minecraft 配置（建议只保留一个 minecraft 块）
 minecraft {
-    // 映射配置（可以是 official 或 parchment）
     mappings channel: 'official', version: '1.20.1'
-
-    // 启用 IDE 资源复制（必须为 true）
     copyIdeResources = true
 
-    // 运行配置
     runs {
-        // 所有运行配置的通用设置
-        configureEach {
-            workingDirectory project.file('run')  // 工作目录
+        client {
+            workingDirectory project.file('run')
+            property 'forge.enabledGameTestNamespaces', 'trileaf'
 
-            // 日志标记配置
-            property 'forge.logging.markers', 'REGISTRIES'
-
-            // 控制台日志级别
-            property 'forge.logging.console.level', 'debug'
-
-            // Mod 源集配置
             mods {
                 trileaf {
                     source sourceSets.main
+                    // ✅ 添加 common 模块的输出
+                    source project(':common').sourceSets.main
                 }
             }
         }
 
-        // 客户端运行配置
-        client {
-            property 'forge.enabledGameTestNamespaces', 'trileaf'
-        }
-
-        // 服务端运行配置
         server {
+            workingDirectory project.file('run')
             property 'forge.enabledGameTestNamespaces', 'trileaf'
-            args '--nogui'  // 无 GUI 模式
+            args '--nogui'
+
+            mods {
+                trileaf {
+                    source sourceSets.main
+                    // ✅ 添加 common 模块的输出
+                    source project(':common').sourceSets.main
+                }
+            }
         }
 
-        // 游戏测试服务器配置
-        gameTestServer {
-            property 'forge.enabledGameTestNamespaces', 'trileaf'
-        }
-
-        // 数据生成配置
         data {
             workingDirectory project.file('run-data')
             args '--mod', 'trileaf', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+            mods {
+                trileaf {
+                    source sourceSets.main
+                    // ✅ 添加 common 模块的输出
+                    source project(':common').sourceSets.main
+                }
+            }
         }
     }
 }
 
-// 包含数据生成器生成的资源
+// 设置生成资源路径
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
-// ========== 依赖配置 ==========
+// 项目版本和分组 ID
+version = '1.0'
+group = 'cn.sanyeyun'
+
+// 输出文件基础配置
+base {
+    archivesName = 'trileaf-monitor'
+}
+
+// 使用 Java 17 编译
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+// 控制台输出环境信息
+println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
+
+// 依赖项配置
 dependencies {
-    // Forge 主依赖
+    // Forge 开发版本
     minecraft "net.minecraftforge:forge:1.20.1-47.0.0"
 
-    // Lombok 依赖（编译时注解处理）
+    // lombok（简化代码编写）
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 
-    // 子模块依赖
+    // 添加 common 子模块的依赖
     implementation project(":common")
 }
 
-// ========== 资源处理 ==========
+// 构建资源时自动替换字段
 tasks.named('processResources', ProcessResources).configure {
-    // 定义要替换的属性
     var replaceProperties = [
-            minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
-            forge_version: forge_version, forge_version_range: forge_version_range,
-            loader_version_range: loader_version_range,
-            mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
-            mod_authors: mod_authors, mod_description: mod_description,
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            forge_version          : forge_version,
+            forge_version_range    : forge_version_range,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description,
     ]
     inputs.properties replaceProperties
 
-    // 处理模组元数据文件
     filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
         expand replaceProperties + [project: project]
     }
 }
 
-// ========== JAR 包配置 ==========
+// 设置 Jar 包 Manifest 信息
 tasks.named('jar', Jar).configure {
     manifest {
         attributes([
@@ -127,35 +125,29 @@ tasks.named('jar', Jar).configure {
                 'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
         ])
     }
-    finalizedBy 'reobfJar'  // 最终执行重混淆任务
-
-    // 包含 common 模块的输出（多项目构建时需要）
-    from project(':common').sourceSets.main.output
-    
-    // 显式设置重复文件处理策略
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    finalizedBy 'reobfJar' // 构建完成后进行混淆
 }
 
-// ========== 发布配置 ==========
+// Maven 发布配置（本地文件夹）
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
-            artifact jar  // 发布 JAR 文件
+            artifact jar
         }
     }
     repositories {
         maven {
-            url "file://${project.projectDir}/mcmodsrepo"  // 本地 Maven 仓库路径
+            url "file://${project.projectDir}/mcmodsrepo"
         }
     }
 }
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
+
+// 设置 Java 编译参数（UTF-8 编码）
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
 }
 
-// ========== 编译配置 ==========
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'  // 使用 UTF-8 编译
+// 将 common 模块的 class 文件打包到主 Jar 文件中（解决类找不到问题）
+jar {
+    from project(':common').sourceSets.main.output
 }
