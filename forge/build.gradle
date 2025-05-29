@@ -1,94 +1,54 @@
+// ========== 插件配置 ==========
 plugins {
-    id 'eclipse'
-    id 'idea'
-    id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+                        // Eclipse IDE 支持
+    id 'idea'                         // IntelliJ IDEA 支持
+    id 'maven-publish'                // Maven 发布支持
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'  // Forge Gradle 插件
 }
+
+// ========== 仓库配置 ==========
 repositories {
-    maven {
-        url = "https://maven.minecraftforge.net/"
-    }
-    maven {
-        url = "https://libraries.minecraft.net/"
-    }
-    maven {
-        url = "https://repo.spongepowered.org/repository/maven-public/"
-    }
-    mavenCentral() // 可选，但建议加上
-}
-minecraft {
-    mappings channel: 'parchment', version: '2023.07.30-1.20.1'
+    maven { url = "https://maven.minecraftforge.net/" }      // Forge 官方仓库
+    maven { url = "https://libraries.minecraft.net/" }       // Mojang 官方库
+    maven { url = "https://repo.spongepowered.org/repository/maven-public/" }  // Sponge 仓库
+    mavenCentral()  // Maven 中央仓库（可选但推荐）
 }
 
-version = '1.0'
-group = 'cn.sanyeyun'
-
+// ========== 项目基本信息 ==========
+version = '1.0'                        // 项目版本号
+group = 'cn.sanyeyun'                 // 项目组ID
 base {
-    archivesName = 'trileaf-monitor'
+    archivesName = 'trileaf-monitor-forge'   // 输出文件名
 }
 
-// Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
+// ========== Java 配置 ==========
+// 1.18+ 版本使用 Java 17，所以你的 mod 应该以 Java 17 为目标
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
+// 打印当前 Java 环境信息
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
+
+// ========== Minecraft 配置 ==========
 minecraft {
-    // The mappings can be changed at any time and must be in the following format.
-    // Channel:   Version:
-    // official   MCVersion             Official field/method names from Mojang mapping files
-    // parchment  YYYY.MM.DD-MCVersion  Open community-sourced parameter names and javadocs layered on top of official
-    //
-    // You must be aware of the Mojang license when using the 'official' or 'parchment' mappings.
-    // See more information here: https://github.com/MinecraftForge/MCPConfig/blob/master/Mojang.md
-    //
-    // Parchment is an unofficial project maintained by ParchmentMC, separate from MinecraftForge
-    // Additional setup is needed to use their mappings: https://parchmentmc.org/docs/getting-started
-    //
-    // Use non-default mappings at your own risk. They may not always work.
-    // Simply re-run your setup task after changing the mappings to update your workspace.
+    // 映射配置（可以是 official 或 parchment）
     mappings channel: 'official', version: '1.20.1'
 
-    // When true, this property will have all Eclipse/IntelliJ IDEA run configurations run the "prepareX" task for the given run configuration before launching the game.
-    // In most cases, it is not necessary to enable.
-    // enableEclipsePrepareRuns = true
-    // enableIdeaPrepareRuns = true
-
-    // This property allows configuring Gradle's ProcessResources task(s) to run on IDE output locations before launching the game.
-    // It is REQUIRED to be set to true for this template to function.
-    // See https://docs.gradle.org/current/dsl/org.gradle.language.jvm.tasks.ProcessResources.html
+    // 启用 IDE 资源复制（必须为 true）
     copyIdeResources = true
 
-    // When true, this property will add the folder name of all declared run configurations to generated IDE run configurations.
-    // The folder name can be set on a run configuration using the "folderName" property.
-    // By default, the folder name of a run configuration is the name of the Gradle project containing it.
-    // generateRunFolders = true
-
-    // This property enables access transformers for use in development.
-    // They will be applied to the Minecraft artifact.
-    // The access transformer file can be anywhere in the project.
-    // However, it must be at "META-INF/accesstransformer.cfg" in the final mod jar to be loaded by Forge.
-    // This default location is a best practice to automatically put the file in the right place in the final jar.
-    // See https://docs.minecraftforge.net/en/latest/advanced/accesstransformers/ for more information.
-    // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
-
-    // Default run configurations.
-    // These can be tweaked, removed, or duplicated as needed.
+    // 运行配置
     runs {
-        // applies to all the run configs below
+        // 所有运行配置的通用设置
         configureEach {
-            workingDirectory project.file('run')
+            workingDirectory project.file('run')  // 工作目录
 
-            // Recommended logging data for a userdev environment
-            // The markers can be added/remove as needed separated by commas.
-            // "SCAN": For mods scan.
-            // "REGISTRIES": For firing of registry events.
-            // "REGISTRYDUMP": For getting the contents of all registries.
+            // 日志标记配置
             property 'forge.logging.markers', 'REGISTRIES'
 
-            // Recommended logging level for the console
-            // You can set various levels here.
-            // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
+            // 控制台日志级别
             property 'forge.logging.console.level', 'debug'
 
+            // Mod 源集配置
             mods {
                 trileaf {
                     source sourceSets.main
@@ -96,89 +56,49 @@ minecraft {
             }
         }
 
+        // 客户端运行配置
         client {
-            workingDirectory project.file('run')
             property 'forge.enabledGameTestNamespaces', 'trileaf'
         }
 
+        // 服务端运行配置
         server {
-            workingDirectory project.file('run')
             property 'forge.enabledGameTestNamespaces', 'trileaf'
-            args '--nogui'
-
-            mods {
-                trileaf {
-                    source sourceSets.main
-                }
-            }
+            args '--nogui'  // 无 GUI 模式
         }
 
-        // This run config launches GameTestServer and runs all registered gametests, then exits.
-        // By default, the server will crash when no gametests are provided.
-        // The gametest system is also enabled by default for other run configs under the /test command.
+        // 游戏测试服务器配置
         gameTestServer {
             property 'forge.enabledGameTestNamespaces', 'trileaf'
         }
 
+        // 数据生成配置
         data {
-            // example of overriding the workingDirectory set in configureEach above
             workingDirectory project.file('run-data')
-
-            // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
             args '--mod', 'trileaf', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
         }
     }
 }
 
-// Include resources generated by data generators.
+// 包含数据生成器生成的资源
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
-repositories {
-    // Put repositories for dependencies here
-    // ForgeGradle automatically adds the Forge maven and Maven Central for you
-
-    // If you have mod jar dependencies in ./libs, you can declare them as a repository like so.
-    // See https://docs.gradle.org/current/userguide/declaring_repositories.html#sub:flat_dir_resolver
-    // flatDir {
-    //     dir 'libs'
-    // }
-}
-
+// ========== 依赖配置 ==========
 dependencies {
-    // Specify the version of Minecraft to use.
-    // Any artifact can be supplied so long as it has a "userdev" classifier artifact and is a compatible patcher artifact.
-    // The "userdev" classifier will be requested and setup by ForgeGradle.
-    // If the group id is "net.minecraft" and the artifact id is one of ["client", "server", "joined"],
-    // then special handling is done to allow a setup of a vanilla dependency without the use of an external repository.
+    // Forge 主依赖
     minecraft "net.minecraftforge:forge:1.20.1-47.0.0"
 
-    // lombok依赖
+    // Lombok 依赖（编译时注解处理）
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 
+    // 子模块依赖
     implementation project(":common")
-
-    // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
-    // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
-    // compileOnly fg.deobf("mezz.jei:jei-${mc_version}-common-api:${jei_version}")
-    // compileOnly fg.deobf("mezz.jei:jei-${mc_version}-forge-api:${jei_version}")
-    // runtimeOnly fg.deobf("mezz.jei:jei-${mc_version}-forge:${jei_version}")
-
-    // Example mod dependency using a mod jar from ./libs with a flat dir repository
-    // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
-    // The group id is ignored when searching -- in this case, it is "blank"
-    // implementation fg.deobf("blank:coolmod-${mc_version}:${coolmod_version}")
-
-    // For more info:
-    // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
-    // http://www.gradle.org/docs/current/userguide/dependency_management.html
 }
 
-// This block of code expands all declared replace properties in the specified resource targets.
-// A missing property will result in an error. Properties are expanded using ${} Groovy notation.
-// When "copyIdeResources" is enabled, this will also run before the game launches in IDE environments.
-// See https://docs.gradle.org/current/dsl/org.gradle.language.jvm.tasks.ProcessResources.html
+// ========== 资源处理 ==========
 tasks.named('processResources', ProcessResources).configure {
+    // 定义要替换的属性
     var replaceProperties = [
             minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
             forge_version: forge_version, forge_version_range: forge_version_range,
@@ -188,12 +108,13 @@ tasks.named('processResources', ProcessResources).configure {
     ]
     inputs.properties replaceProperties
 
+    // 处理模组元数据文件
     filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
         expand replaceProperties + [project: project]
     }
 }
 
-// Example for how to get properties into the manifest for reading at runtime.
+// ========== JAR 包配置 ==========
 tasks.named('jar', Jar).configure {
     manifest {
         attributes([
@@ -206,32 +127,35 @@ tasks.named('jar', Jar).configure {
                 'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
         ])
     }
-    finalizedBy 'reobfJar'
+    finalizedBy 'reobfJar'  // 最终执行重混淆任务
+
+    // 包含 common 模块的输出（多项目构建时需要）
+    from project(':common').sourceSets.main.output
+    
+    // 显式设置重复文件处理策略
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-// However if you are in a multi-project build, dev time needs unobfed jar files, so you can delay the obfuscation until publishing by doing:
-// tasks.named('publish').configure {
-//     dependsOn 'reobfJar'
-// }
-
-// Example configuration to allow publishing using the maven-publish plugin
+// ========== 发布配置 ==========
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
-            artifact jar
+            artifact jar  // 发布 JAR 文件
         }
     }
     repositories {
         maven {
-            url "file://${project.projectDir}/mcmodsrepo"
+            url "file://${project.projectDir}/mcmodsrepo"  // 本地 Maven 仓库路径
         }
     }
 }
-
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
-// 将 common 模块的 class 文件打包到 Forge 的 JAR 中 TODO 可能有点问题 项目一直起不来， 不加这个直接会报common模块的错误 找不到类啥的
-jar {
-    from project(':common').sourceSets.main.output
+
+// ========== 编译配置 ==========
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'  // 使用 UTF-8 编译
 }
