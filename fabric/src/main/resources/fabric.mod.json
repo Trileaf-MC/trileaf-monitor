@@ -29,7 +29,7 @@
 		"trileaf-monitor-mod.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.16.12",
+		"fabricloader": "<=0.16.14",
 		"minecraft": "~1.20.1",
 		"java": ">=17",
 		"fabric-api": "*"
