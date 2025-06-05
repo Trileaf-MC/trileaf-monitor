@@ -1,27 +1,41 @@
 plugins {
+	// 应用 Java 插件，提供 Java 项目构建能力
 	id 'java'
 }
 
+// 为所有子项目应用配置
 subprojects {
+	// 应用 Java 插件到子项目
 	apply plugin: 'java'
 
+	// 设置项目的 group 和 version，从 gradle.properties 中读取
 	group = project.maven_group
 	version = project.mod_version
 
+	// 配置 Maven 仓库，用于下载依赖
 	repositories {
+		// Maven Central 仓库
 		mavenCentral()
+		// FabricMC 的 Maven 仓库 (即使是 Forge 项目，有时也可能需要)
 		maven { url = 'https://maven.fabricmc.net/' }
+		// MinecraftForge 的 Maven 仓库
 		maven { url = 'https://files.minecraftforge.net/maven' }
 	}
 
+	// 配置依赖
 	dependencies {
 		// 所有子模块共享的依赖（如 lombok）
+		// compileOnly 依赖只在编译时需要，不会被打入最终 Jar
 		compileOnly 'org.projectlombok:lombok:1.18.30'
+		// annotationProcessor 用于处理注解（如 Lombok 生成代码）
 		annotationProcessor 'org.projectlombok:lombok:1.18.30'
 	}
 
+	// 配置 Java 编译相关
 	java {
+		// 配置生成 sourcesJar
 		withSourcesJar()
+		// 设置源代码和目标字节码兼容性为 Java 17
 		sourceCompatibility = JavaVersion.VERSION_17
 		targetCompatibility = JavaVersion.VERSION_17
 	}
