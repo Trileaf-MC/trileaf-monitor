@@ -34,7 +34,7 @@ public class TrileafMonitorForgeMod {
         LOGGER.info("TrileafMonitor mod 设置中...");
 
         // 加载配置
-        // ConfigFileManager.loader();
+         ConfigFileManager.loader();
 
         // 注册事件监听器
         ServerEventListener.register();
