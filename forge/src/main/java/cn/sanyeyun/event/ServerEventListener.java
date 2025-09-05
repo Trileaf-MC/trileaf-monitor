@@ -42,16 +42,14 @@ public class ServerEventListener {
 
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
-        TrileafMonitorForgeMod.LOGGER.info("服务器已启动，开始监控...");
-        System.out.println("TrileafMonitor: 服务器已完全启动...");
+        TrileafMonitorForgeMod.LOGGER.info("服务器已启动,开始监控...");
         // 处理服务器启动事件
         handleServerStarted(event.getServer());
     }
 
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) {
-        TrileafMonitorForgeMod.LOGGER.info("服务器正在停止，结束监控...");
-        System.out.println("TrileafMonitor: 服务器正在停止...");
+        TrileafMonitorForgeMod.LOGGER.info("服务器正在停止,结束监控...");
     }
 
     public static void register() {
@@ -86,7 +84,7 @@ public class ServerEventListener {
                 }, 5, 5000); // 重试5次，每次间隔5秒
 
                 if (modInfos != null) {
-                    HttpRequestUtil.postMultipart(CommonConstants.MOD_REGISTER, GSON.toJson(modInfos), GlobalCache.getCompletelyUnmatchedFiles());
+                    HttpRequestUtil.postMultipart(CommonConstants.MOD_REGISTER, GSON.toJson(modInfos), GlobalCache.getCompletelyUnmatchedFiles(),PlatformType.INTERNAL);
                 } else {
                     LOGGER.warn("未能在重试后获取到 ModInfos，跳过上传");
                 }

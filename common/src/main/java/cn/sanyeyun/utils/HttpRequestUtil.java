@@ -173,7 +173,7 @@ public class HttpRequestUtil {
 
             requestOk(platform, fullUrl, statusCode, body);
             return body;
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
             requestError(platform, fullUrl, e);
             return null;
         }
@@ -188,7 +188,7 @@ public class HttpRequestUtil {
      * @return {@link String}
      * @author 徐亚松 2025/5/7 15:18
      */
-    public static String postMultipart(String path, String jsonPayload, List<File> files) {
+    public static String postMultipart(String path, String jsonPayload, List<File> files,PlatformType platform ) {
         String boundary = "----Boundary" + UUID.randomUUID().toString().replace("-", "");
         String fullUrl = BASE_INTERNAL + path;
 
@@ -225,10 +225,10 @@ public class HttpRequestUtil {
             builder.header(HEADER_AUTHORIZATION, GlobalCache.getTrileafCertification().getMonitorAuth());
 
             HttpResponse<String> response = CLIENT.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-            requestOk(null, fullUrl, response.statusCode(), response.body());
+            requestOk(platform, fullUrl, response.statusCode(), response.body());
             return response.body();
         } catch (IOException | InterruptedException e) {
-            requestError(null, fullUrl, e);
+            requestError(platform, fullUrl, e);
             return null;
         }
     }
