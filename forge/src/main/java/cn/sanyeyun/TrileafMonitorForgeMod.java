@@ -36,8 +36,5 @@ public class TrileafMonitorForgeMod {
         // 加载配置
          ConfigFileManager.loader();
 
-        // 注册事件监听器
-        ServerEventListener.register();
-        PlayerEventListener.register();
     }
 }

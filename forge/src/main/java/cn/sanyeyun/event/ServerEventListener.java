@@ -1,5 +1,6 @@
 package cn.sanyeyun.event;
 
+import cn.sanyeyun.TrileafMonitorForgeMod;
 import cn.sanyeyun.cache.GlobalCache;
 import cn.sanyeyun.constant.CommonConstants;
 import cn.sanyeyun.entity.ModInfo;
@@ -8,22 +9,20 @@ import cn.sanyeyun.entity.response.RuoYiResponse;
 import cn.sanyeyun.enums.PlatformType;
 import cn.sanyeyun.service.ModService;
 import cn.sanyeyun.utils.HttpRequestUtil;
-import cn.sanyeyun.utils.RetryUtils;
 import com.google.gson.Gson;
-import net.minecraft.server.MinecraftServer;
 import com.google.gson.GsonBuilder;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.dedicated.DedicatedServerProperties;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import cn.sanyeyun.TrileafMonitorForgeMod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -41,73 +40,73 @@ public class ServerEventListener {
     private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 
     @SubscribeEvent
-    public static void onServerStarted(ServerStartedEvent event) {
-        TrileafMonitorForgeMod.LOGGER.info("服务器已启动,开始监控...");
-        // 处理服务器启动事件
-        handleServerStarted(event.getServer());
+    public static void onServerStarting(ServerStartingEvent event) {
+        LOGGER.info("服务端启动中,准备获取Mod信息");
+        // 异步执行采集Mod信息
+        ModService.collectModInfoAsync();
     }
 
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) {
-        TrileafMonitorForgeMod.LOGGER.info("服务器正在停止,结束监控...");
-    }
-
-    public static void register() {
-        // 在Forge中，使用@Mod.EventBusSubscriber注解后不需要手动注册
+        LOGGER.info("服务端关闭中");
+        CompletableFuture.runAsync(() ->
+                HttpRequestUtil.put(CommonConstants.SERVERS_LOG_OUT, null, PlatformType.INTERNAL)
+        );
     }
 
     @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event) {
-        LOGGER.info("服务端启动中,准备获取Mod信息");
-        // 异步执行采集Mod信息
-        CompletableFuture.runAsync(ModService::collectModInfo);
+    public static void onServerStarted(ServerStartedEvent event) {
+        LOGGER.info("服务端已启动,准备注册服务器信息");
+        handleServerStarted(event.getServer());
     }
 
-    /**
-     * 注册服务器信息
-     *
-     * @param server 服务器实例
-     * @author 徐亚松
-     * <p>2025/5/7 21:07</p>
-     */
     private static void handleServerStarted(MinecraftServer server) {
         try {
-            ServerInfo serverInfo = buildFrom(server);
-            String json = GSON.toJson(serverInfo);
-            String responseStr = HttpRequestUtil.post(SERVERS_REGISTER, json, PlatformType.INTERNAL);
-            RuoYiResponse response = GSON.fromJson(responseStr, RuoYiResponse.class);
-            // 等待服务器顺利注册后 再去上传Mod信息
-            if (response.isSuccess()) {
-                List<ModInfo> modInfos = RetryUtils.retryUntilNotNull(() -> {
-                    List<ModInfo> list = GlobalCache.getModInfos();
-                    return (list != null && !list.isEmpty()) ? list : null;
-                }, 5, 5000); // 重试5次，每次间隔5秒
+            String json = GSON.toJson(buildFrom(server));
 
-                if (modInfos != null) {
-                    HttpRequestUtil.postMultipart(CommonConstants.MOD_REGISTER, GSON.toJson(modInfos), GlobalCache.getCompletelyUnmatchedFiles(),PlatformType.INTERNAL);
+            CompletableFuture.supplyAsync(() ->
+                    GSON.fromJson(HttpRequestUtil.post(SERVERS_REGISTER, json, PlatformType.INTERNAL), RuoYiResponse.class)
+            ).thenAccept(response -> {
+                if (response != null && response.isSuccess()) {
+                    LOGGER.info("服务器注册成功,等待 Mod 信息采集完成...");
+
+                    CompletableFuture.allOf(GlobalCache.getModInfos(), GlobalCache.getCompletelyUnmatchedFiles())
+                            .thenRun(() -> {
+                                try {
+                                    List<ModInfo> modInfos = GlobalCache.getModInfos().join();
+                                    List<File> files = GlobalCache.getCompletelyUnmatchedFiles().join();
+
+                                    if (modInfos == null || modInfos.isEmpty()) {
+                                        LOGGER.warn("Mod 信息为空,跳过上传");
+                                        return;
+                                    }
+
+                                    HttpRequestUtil.postMultipart(CommonConstants.MOD_REGISTER, GSON.toJson(modInfos), files, PlatformType.INTERNAL);
+                                    LOGGER.info("Mod 信息上传成功,共 {} 个 Mod", modInfos.size());
+                                } catch (Exception e) {
+                                    LOGGER.error("上传 Mod 信息失败", e);
+                                }
+                            }).exceptionally(e -> {
+                                LOGGER.error("等待 Mod 采集完成时出现异常", e);
+                                return null;
+                            });
+
                 } else {
-                    LOGGER.warn("未能在重试后获取到 ModInfos，跳过上传");
+                    LOGGER.warn("服务器注册失败,返回状态: {}", response);
                 }
-            }
+            }).exceptionally(e -> {
+                LOGGER.error("服务器注册失败", e);
+                return null;
+            });
 
         } catch (Exception e) {
-            LOGGER.error("服务器信息上传失败", e);
+            LOGGER.error("构建服务器注册请求失败", e);
         }
     }
 
-
-    /**
-     * 构建参数
-     *
-     * @param server 实例信息
-     * @return {@link ServerInfo}
-     * @author 徐亚松
-     * <p>2025/4/14 22:25</p>
-     */
     private static ServerInfo buildFrom(MinecraftServer server) {
         ServerInfo info = new ServerInfo();
 
-        // 转为服务端的配置文件
         if (server instanceof DedicatedServer dedicatedServer) {
             DedicatedServerProperties properties = dedicatedServer.getProperties();
 
@@ -122,42 +121,20 @@ public class ServerEventListener {
             info.setMotd(properties.motd);
         }
 
-        // 补充运行时数据
         info.setMinecraftVersion(server.getServerVersion());
         info.setCoreType(server.getServerModName());
-        info.setCoreVersion(server.getServerVersion()); // 设置为指定的Forge版本
+        info.setCoreVersion(server.getServerVersion());
         String publicIp = HttpRequestUtil.getPublicIp();
         GlobalCache.setServerIp(publicIp);
         info.setServerIp(publicIp);
         info.setCurrentPlayers((long) server.getPlayerCount());
         info.setMaxPlayers((long) server.getMaxPlayers());
         info.setJavaVersion(System.getProperty("java.version"));
-        // 图标
-        /*Path iconPath = Paths.get("server-icon.png");
-        if (Files.exists(iconPath)) {
-            byte[] bytes;
-            try {
-                bytes = Files.readAllBytes(iconPath);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            String base64 = Base64.getEncoder().encodeToString(bytes);
-            info.setIcon("data:image/png;base64," + base64);
-        }*/
-
 
         return info;
     }
 
-    /**
-     * boolean 转 int
-     *
-     * @param b 值
-     * @return int
-     * @author 徐亚松 2025/4/14 16:39
-     */
     private static int booleanConvertInteger(boolean b) {
         return b ? 1 : 0;
     }
-
 }

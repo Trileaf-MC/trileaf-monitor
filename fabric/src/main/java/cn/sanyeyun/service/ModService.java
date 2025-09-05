@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -32,6 +33,49 @@ public class ModService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModService.class);
     private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 
+    public static void collectModInfoAsync() {
+        CompletableFuture.runAsync(() -> {
+            try {
+                // 1. 收集 Mod 文件
+                List<File> jarFiles = findModJarFiles();
+                if (jarFiles.isEmpty()) {
+                    GlobalCache.getModInfos().complete(Collections.emptyList());
+                    GlobalCache.getCompletelyUnmatchedFiles().complete(Collections.emptyList());
+                    return;
+                }
+
+                // 2. 计算 SHA1
+                Map<String, File> sha1Map = calculateSha1Hashes(jarFiles);
+
+                // 3. 调用 Modrinth 查询
+                ModrinthResponse modrinthResponse = queryModrinth(sha1Map.keySet());
+
+                // 4. 收集未匹配的 SHA1 并计算 MurmurHash
+                Map<Long, File> murmurMap = handleUnmatchedSha1(sha1Map, modrinthResponse);
+
+                // 5. 调用 CurseForge 查询
+                CurseForgeResponse curseForgeResponse = queryCurseForge(murmurMap.keySet());
+
+                // 6. 收集没有任何匹配的文件
+                List<File> completelyUnmatchedFiles = collectUnmatchedFiles(murmurMap, curseForgeResponse);
+                GlobalCache.getCompletelyUnmatchedFiles().complete(completelyUnmatchedFiles);
+
+                // 7. 组装 ModInfo
+                List<ModInfo> modInfos = buildFrom(modrinthResponse, curseForgeResponse);
+                GlobalCache.getModInfos().complete(modInfos);
+
+
+
+            } catch (Exception e) {
+                // 异步异常也要 completeExceptionally
+                GlobalCache.getModInfos().completeExceptionally(e);
+                GlobalCache.getCompletelyUnmatchedFiles().completeExceptionally(e);
+                LOGGER.error(e.toString());
+            }
+        });
+    }
+
+
     /**
      * 收集Mod信息
      *
@@ -39,7 +83,7 @@ public class ModService {
      * @author 徐亚松
      * <p>2025/5/7 22:24</p>
      */
-    public static boolean collectModInfo() {
+/*    public static boolean collectModInfo() {
         // 收集Mod
         List<File> jarFiles = findModJarFiles();
         if (jarFiles.isEmpty()) return false;
@@ -63,7 +107,7 @@ public class ModService {
         return !modInfos.isEmpty();
         // String s = HttpRequestUtil.postMultipart(CommonConstants.MOD_REGISTER, GSON.toJson(modInfos), completelyUnmatchedFiles);
 
-    }
+    }*/
 
     /**
      * 构建请求数据
@@ -208,56 +252,91 @@ public class ModService {
         return map;
     }
 
+
     /**
-     * 查询Modrinth
+     * 查询 Modrinth，通过 SHA-1 集合查找 Mod 信息
      *
      * @param sha1Set sha1集合
-     * @return {@link ModrinthResponse}
+     * @return {@link ModrinthResponse} 返回 Modrinth 查询结果
      * @author 徐亚松
      * <p>2025/5/7 19:11</p>
      */
     private static ModrinthResponse queryModrinth(Set<String> sha1Set) {
-        JsonObject json = new JsonObject();
-        JsonArray hashes = new JsonArray();
-        sha1Set.forEach(hashes::add);
-        json.add("hashes", hashes);
-        json.addProperty("algorithm", "sha1");
+        try {
+            // 构建请求 JSON
+            JsonObject json = new JsonObject();
+            JsonArray hashes = new JsonArray();
+            sha1Set.forEach(hashes::add);  // 将所有 SHA-1 添加到数组
+            json.add("hashes", hashes);
+            json.addProperty("algorithm", "sha1"); // 指定使用 SHA-1 算法
 
-        String result = HttpRequestUtil.post(CommonConstants.VERSION_FILES, json.toString(), PlatformType.MODRINTH);
-        if (result == null || result.isBlank()) return new ModrinthResponse();
-        ModrinthResponse modrinthResponse = GSON.fromJson(result, ModrinthResponse.class);
-        if (modrinthResponse == null || modrinthResponse.isEmpty()) return new ModrinthResponse();
-
-        // 过滤出所有的项目Id
-        List<String> projectIds = modrinthResponse.values().stream()
-                .map(ModrinthResponse.ModrinthModInfo::getProject_id).filter(Objects::nonNull).toList();
-        Map<String, Object> params = Map.of("ids", projectIds);
-
-        String resultProject = HttpRequestUtil.get(CommonConstants.PROJECTS, params, PlatformType.MODRINTH);
-        if (resultProject == null || resultProject.isBlank()) return modrinthResponse;
-        Type listType = new TypeToken<List<ModrinthProjectResponse>>() {
-        }.getType();
-        List<ModrinthProjectResponse> modrinthProjectResponse = GSON.fromJson(resultProject, listType);
-        if (modrinthProjectResponse == null || modrinthProjectResponse.isEmpty()) return modrinthResponse;
-
-
-        // 将 modrinthProjectResponse 转为 Map，便于快速查找
-        Map<String, ModrinthProjectResponse> projectMap = modrinthProjectResponse.stream()
-                .filter(p -> p.getId() != null)
-                .collect(Collectors.toMap(ModrinthProjectResponse::getId, p -> p, (a, b) -> a));
-
-        modrinthResponse.forEach((k, v) -> {
-            if (v == null || v.getProject_id() == null) return;
-
-            ModrinthProjectResponse project = projectMap.get(v.getProject_id());
-            if (project != null) {
-                v.setClient_side(project.getClient_side());
-                v.setServer_side(project.getServer_side());
-                v.setCategories(project.getCategories() != null ? String.join(",", project.getCategories()) : null);
+            // 发送 POST 请求到 Modrinth 查询接口
+            String result = HttpRequestUtil.post(CommonConstants.VERSION_FILES, json.toString(), PlatformType.MODRINTH);
+            if (result == null || result.isBlank()) {
+                LOGGER.warn("Modrinth 返回为空，sha1Set: {}", sha1Set);
+                return new ModrinthResponse(); // 返回空对象，避免 NPE
             }
-        });
-        return modrinthResponse;
+
+            // 解析 JSON 为 ModrinthResponse
+            ModrinthResponse modrinthResponse = GSON.fromJson(result, ModrinthResponse.class);
+            if (modrinthResponse == null || modrinthResponse.isEmpty()) {
+                LOGGER.warn("Modrinth 解析结果为空，返回空对象");
+                return new ModrinthResponse();
+            }
+
+            // 收集所有 project_id，用于后续查询项目详细信息
+            List<String> projectIds = modrinthResponse.values().stream()
+                    .map(ModrinthResponse.ModrinthModInfo::getProject_id)
+                    .filter(Objects::nonNull)
+                    .toList();
+
+            if (projectIds.isEmpty()) {
+                // 如果没有任何 project_id，直接返回已有的响应
+                return modrinthResponse;
+            }
+
+            // 通过 GET 请求获取项目详细信息
+            Map<String, Object> params = Map.of("ids", projectIds);
+            String resultProject = HttpRequestUtil.get(CommonConstants.PROJECTS, params, PlatformType.MODRINTH);
+
+            if (resultProject == null || resultProject.isBlank()) {
+                LOGGER.warn("Modrinth 项目详情返回为空");
+                return modrinthResponse; // 返回基础响应
+            }
+
+            // 解析项目详情列表
+            Type listType = new TypeToken<List<ModrinthProjectResponse>>() {}.getType();
+            List<ModrinthProjectResponse> modrinthProjectResponse = GSON.fromJson(resultProject, listType);
+            if (modrinthProjectResponse == null || modrinthProjectResponse.isEmpty()) {
+                LOGGER.warn("Modrinth 项目详情解析为空");
+                return modrinthResponse;
+            }
+
+            // 将项目详情列表转换为 Map，便于快速查找
+            Map<String, ModrinthProjectResponse> projectMap = modrinthProjectResponse.stream()
+                    .filter(p -> p.getId() != null)
+                    .collect(Collectors.toMap(ModrinthProjectResponse::getId, p -> p, (a, b) -> a));
+
+            // 将查询到的项目详细信息填充到 ModrinthResponse 中
+            modrinthResponse.forEach((sha1, modInfo) -> {
+                if (modInfo == null || modInfo.getProject_id() == null) return;
+                ModrinthProjectResponse project = projectMap.get(modInfo.getProject_id());
+                if (project != null) {
+                    modInfo.setClient_side(project.getClient_side());
+                    modInfo.setServer_side(project.getServer_side());
+                    modInfo.setCategories(project.getCategories() != null ? String.join(",", project.getCategories()) : null);
+                }
+            });
+
+            return modrinthResponse;
+
+        } catch (Exception e) {
+            // 捕获所有异常，防止影响调用者
+            LOGGER.error("查询 Modrinth 失败，sha1Set: {}", sha1Set, e);
+            return new ModrinthResponse(); // 返回空对象，保证安全
+        }
     }
+
 
     /**
      * 根据返回值收集未匹配的Mod 也就是Modrinth上没有查询到的Mod 并计算murmurHash2
@@ -294,7 +373,92 @@ public class ModService {
      * @author 徐亚松
      * <p>2025/5/7 19:13</p>
      */
+
     private static CurseForgeResponse queryCurseForge(Set<Long> fingerprints) {
+        JsonObject json = new JsonObject();
+        JsonArray array = new JsonArray();
+        fingerprints.forEach(array::add);
+        json.add("fingerprints", array);
+
+        CurseForgeResponse curseForgeResponse = new CurseForgeResponse();
+        try {
+            // 调用接口
+            String result = HttpRequestUtil.post(CommonConstants.FINGERPRINTS, json.toString(), PlatformType.CURSEFORGE);
+            if (result == null || result.isBlank()) {
+                LOGGER.warn("CurseForge 指纹查询返回为空");
+                return curseForgeResponse; // 返回空对象
+            }
+
+            curseForgeResponse = GSON.fromJson(result, CurseForgeResponse.class);
+
+            List<Long> modIds = curseForgeResponse.getData().getExactMatches().stream()
+                    .map(v -> v.getFile().getId()).toList();
+            if (modIds.isEmpty()) {
+                return curseForgeResponse;
+            }
+
+            JsonObject json1 = new JsonObject();
+            JsonArray array1 = new JsonArray();
+            modIds.forEach(array1::add);
+            json1.add("modIds", array1);
+
+            // 请求 MOD 详情
+            String post = HttpRequestUtil.post(CommonConstants.MODS, json1.toString(), PlatformType.CURSEFORGE);
+            if (post == null || post.isBlank()) {
+                LOGGER.warn("CurseForge MOD 查询返回为空");
+                return curseForgeResponse;
+            }
+
+            // 安全解析 JSON
+            JsonObject root;
+            try {
+                root = JsonParser.parseString(post).getAsJsonObject();
+            } catch (JsonSyntaxException e) {
+                LOGGER.error("解析 CurseForge MOD JSON 出错", e);
+                return curseForgeResponse;
+            }
+
+            JsonArray dataArray = root.getAsJsonArray("data");
+            if (dataArray == null) {
+                LOGGER.warn("CurseForge MOD JSON 中没有 data 数组");
+                return curseForgeResponse;
+            }
+
+            Map<Long, String> modCategoriesMap = new HashMap<>();
+            for (JsonElement element : dataArray) {
+                if (element == null || element.isJsonNull()) continue;
+                JsonObject mod = element.getAsJsonObject();
+                long modId = mod.get("id").getAsLong();
+                JsonArray categories = mod.getAsJsonArray("categories");
+                List<String> slugList = new ArrayList<>();
+                if (categories != null) {
+                    for (JsonElement catElement : categories) {
+                        if (catElement.isJsonObject()) {
+                            JsonObject category = catElement.getAsJsonObject();
+                            if (category.has("slug") && !category.get("slug").isJsonNull()) {
+                                slugList.add(category.get("slug").getAsString());
+                            }
+                        }
+                    }
+                }
+                modCategoriesMap.put(modId, String.join(",", slugList));
+            }
+
+            // 设置类别
+            curseForgeResponse.getData().getExactMatches().forEach(v -> {
+                if (v != null) v.setCategories(modCategoriesMap.get(v.getId()));
+            });
+
+        } catch (Exception e) {
+            LOGGER.error("查询 CurseForge 失败", e);
+        }
+
+        return curseForgeResponse;
+    }
+
+
+
+    /*  private static CurseForgeResponse queryCurseForge(Set<Long> fingerprints) {
         JsonObject json = new JsonObject();
         JsonArray array = new JsonArray();
         fingerprints.forEach(array::add);
@@ -345,7 +509,7 @@ public class ModService {
 
         return curseForgeResponse;
     }
-
+*/
     /**
      * 收集 modrinth和forge都没有匹配的Mod
      *
@@ -376,6 +540,7 @@ public class ModService {
      * @author 徐亚松
      * <p>2025/5/7 14:39</p>
      */
+    /*
     public static void collectModInfo1() {
         final File MODS_FOLDER = new File(System.getProperty("user.dir"), "mods");
 
@@ -447,5 +612,6 @@ public class ModService {
         CurseForgeResponse response = GSON.fromJson(curseforgeJsonString, CurseForgeResponse.class);
 
     }
+    */
 }
 

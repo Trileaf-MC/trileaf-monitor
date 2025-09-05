@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 全局缓存类
@@ -30,18 +31,15 @@ public class GlobalCache {
     private static Long serverPort;
 
     /**
-     * Mod信息
+     * Mod信息 修改成异步方式
      */
     @Getter
-    @Setter
-    private static List<ModInfo> modInfos;
-
+    private static final CompletableFuture<List<ModInfo>> modInfos = new CompletableFuture<>();
     /**
-     * Mod文件信息
+     * Mod文件信息 修改成异步方式
      */
     @Getter
-    @Setter
-    private static List<File> completelyUnmatchedFiles;
+    private static final CompletableFuture<List<File>> completelyUnmatchedFiles = new CompletableFuture<>();
 
     /**
      * 配置文件映射对象

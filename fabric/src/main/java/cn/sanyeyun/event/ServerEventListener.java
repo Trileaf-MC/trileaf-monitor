@@ -8,7 +8,6 @@ import cn.sanyeyun.entity.response.RuoYiResponse;
 import cn.sanyeyun.enums.PlatformType;
 import cn.sanyeyun.service.ModService;
 import cn.sanyeyun.utils.HttpRequestUtil;
-import cn.sanyeyun.utils.RetryUtils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -18,6 +17,7 @@ import net.minecraft.server.dedicated.ServerPropertiesHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -38,18 +38,20 @@ public class ServerEventListener {
         ServerLifecycleEvents.SERVER_STARTING.register((MinecraftServer server) -> {
             LOGGER.info("服务端启动中,准备获取Mod信息");
             // 异步执行采集Mod信息
-            CompletableFuture.runAsync(ModService::collectModInfo);
+            //CompletableFuture.runAsync(ModService::collectModInfo);
+            // 异步开始 mod 信息采集
+            ModService.collectModInfoAsync();
         });
 
         ServerLifecycleEvents.SERVER_STOPPING.register((MinecraftServer server) -> {
             LOGGER.info("服务端关闭中");
-            CompletableFuture.runAsync(()-> HttpRequestUtil.put(CommonConstants.SERVERS_LOG_OUT, null, PlatformType.INTERNAL));
+            CompletableFuture.runAsync(() -> HttpRequestUtil.put(CommonConstants.SERVERS_LOG_OUT, null, PlatformType.INTERNAL));
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register((MinecraftServer server) -> {
-            LOGGER.info("服务端已启动,准备获取服务器信息");
+            LOGGER.info("服务端已启动,准备上报");
             // 异步执行采集与上报逻辑
-            CompletableFuture.runAsync(() -> handleServerStarted(server));
+            handleServerStarted(server);
         });
 
     }
@@ -63,25 +65,49 @@ public class ServerEventListener {
      */
     private static void handleServerStarted(MinecraftServer server) {
         try {
+            // 构建服务器注册请求参数
             String json = GSON.toJson(buildFrom(server));
-            String responseStr = HttpRequestUtil.post(SERVERS_REGISTER, json, PlatformType.INTERNAL);
-            RuoYiResponse response = GSON.fromJson(responseStr, RuoYiResponse.class);
-            // 等待服务器顺利注册后 再去上传Mod信息
-            if (response.isSuccess()) {
-                List<ModInfo> modInfos = RetryUtils.retryUntilNotNull(() -> {
-                    List<ModInfo> list = GlobalCache.getModInfos();
-                    return (list != null && !list.isEmpty()) ? list : null;
-                }, 5, 5000); // 重试5次，每次间隔5秒
 
-                if (modInfos != null) {
-                    HttpRequestUtil.postMultipart(CommonConstants.MOD_REGISTER, GSON.toJson(modInfos), GlobalCache.getCompletelyUnmatchedFiles());
+            // 异步注册服务器
+            CompletableFuture.supplyAsync(() ->
+                    GSON.fromJson(HttpRequestUtil.post(SERVERS_REGISTER, json, PlatformType.INTERNAL),
+                            RuoYiResponse.class)
+            ).thenAccept(response -> {
+                if (response != null && response.isSuccess()) {
+                    LOGGER.info("服务器注册成功,等待 Mod 信息采集完成...");
+
+                    // 异步等待 Mod 信息和文件完成后上传
+                    CompletableFuture.allOf(GlobalCache.getModInfos(), GlobalCache.getCompletelyUnmatchedFiles()).thenRun(() -> {
+                        try {
+                            List<ModInfo> modInfos = GlobalCache.getModInfos().join();
+                            List<File> files = GlobalCache.getCompletelyUnmatchedFiles().join();
+
+                            if (modInfos == null || modInfos.isEmpty()) {
+                                LOGGER.warn("Mod 信息为空,跳过上传");
+                                return;
+                            }
+
+                            // 上传 Mod 信息
+                            HttpRequestUtil.postMultipart(CommonConstants.MOD_REGISTER, GSON.toJson(modInfos), files, PlatformType.INTERNAL);
+                            LOGGER.info("Mod 信息上传成功,共 {} 个 Mod", modInfos.size());
+                        } catch (Exception e) {
+                            LOGGER.error("上传 Mod 信息失败", e);
+                        }
+                    }).exceptionally(e -> {
+                        LOGGER.error("等待 Mod 采集完成时出现异常", e);
+                        return null;
+                    });
+
                 } else {
-                    LOGGER.warn("未能在重试后获取到 ModInfos，跳过上传");
+                    LOGGER.warn("服务器注册失败,返回状态: {}", response);
                 }
-            }
+            }).exceptionally(e -> {
+                LOGGER.error("服务器注册失败", e);
+                return null;
+            });
 
         } catch (Exception e) {
-            LOGGER.error("服务器信息上传失败", e);
+            LOGGER.error("构建服务器注册请求失败", e);
         }
     }
 

@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -33,36 +34,47 @@ public class ModService {
     private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 
     /**
-     * 收集Mod信息
-     *
-     * @return boolean 是否采集成功
-     * @author 徐亚松
-     * <p>2025/5/7 22:24</p>
+     * 异步收集 Mod 信息
      */
-    public static boolean collectModInfo() {
-        // 收集Mod
-        List<File> jarFiles = findModJarFiles();
-        if (jarFiles.isEmpty()) return false;
-        // 封装请求参数
-        Map<String, File> sha1Map = calculateSha1Hashes(jarFiles);
-        // 调用Modrinth查询
-        ModrinthResponse modrinthResponse = queryModrinth(sha1Map.keySet());
+    public static void collectModInfoAsync() {
+        CompletableFuture.runAsync(() -> {
+            try {
+                // 1. 收集 Mod 文件
+                List<File> jarFiles = findModJarFiles();
+                if (jarFiles.isEmpty()) {
+                    GlobalCache.getModInfos().complete(Collections.emptyList());
+                    GlobalCache.getCompletelyUnmatchedFiles().complete(Collections.emptyList());
+                    return;
+                }
 
-        // 封装请求参数
-        Map<Long, File> murmurMap = handleUnmatchedSha1(sha1Map, modrinthResponse);
-        // 调用CurseForge查询
-        CurseForgeResponse curseForgeResponse = queryCurseForge(murmurMap.keySet());
+                // 2. 计算 SHA1
+                Map<String, File> sha1Map = calculateSha1Hashes(jarFiles);
 
-        // 收集没有任何匹配的mod
-        List<File> completelyUnmatchedFiles = collectUnmatchedFiles(murmurMap, curseForgeResponse);
-        GlobalCache.setCompletelyUnmatchedFiles(completelyUnmatchedFiles);
+                // 3. 调用 Modrinth 查询
+                ModrinthResponse modrinthResponse = queryModrinth(sha1Map.keySet());
 
-        // 组装成请求数据
-        List<ModInfo> modInfos = buildFrom(modrinthResponse, curseForgeResponse);
-        GlobalCache.setModInfos(modInfos);
-        return !modInfos.isEmpty();
-        // String s = HttpRequestUtil.postMultipart(CommonConstants.MOD_REGISTER, GSON.toJson(modInfos), completelyUnmatchedFiles);
+                // 4. 处理未匹配 SHA1 并计算 MurmurHash
+                Map<Long, File> murmurMap = handleUnmatchedSha1(sha1Map, modrinthResponse);
 
+                // 5. 调用 CurseForge 查询
+                CurseForgeResponse curseForgeResponse = queryCurseForge(murmurMap.keySet());
+
+                // 6. 收集完全未匹配的文件
+                List<File> completelyUnmatchedFiles = collectUnmatchedFiles(murmurMap, curseForgeResponse);
+                GlobalCache.getCompletelyUnmatchedFiles().complete(completelyUnmatchedFiles);
+
+                // 7. 构建 ModInfo 并缓存
+                List<ModInfo> modInfos = buildFrom(modrinthResponse, curseForgeResponse);
+                GlobalCache.getModInfos().complete(modInfos);
+
+                LOGGER.info("Forge Mod 信息采集完成，共 {} 个 Mod", modInfos.size());
+
+            } catch (Exception e) {
+                GlobalCache.getModInfos().completeExceptionally(e);
+                GlobalCache.getCompletelyUnmatchedFiles().completeExceptionally(e);
+                LOGGER.error("异步收集 Forge Mod 信息失败", e);
+            }
+        });
     }
 
     /**
