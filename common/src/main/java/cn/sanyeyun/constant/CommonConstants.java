@@ -20,8 +20,8 @@ public class CommonConstants {
 
 
     // 基础路径
-    public static final String BASE_INTERNAL = "http://localhost:8070";
-    //public static final String BASE_INTERNAL = "http://liebepj.cn";
+    //public static final String BASE_INTERNAL = "http://localhost:8070";
+    public static final String BASE_INTERNAL = "https://backend.oksanye.com/prod-api";
     public static final String BASE_MODRINTH = "https://api.modrinth.com";
     public static final String BASE_CURSEFORGE = "https://api.curseforge.com";
 
