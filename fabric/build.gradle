@@ -31,6 +31,8 @@ jar {
     from("LICENSE") {
         rename { "${it}_${project.archives_base_name}" }
     }
+    from(project(":common").sourceSets.main.output)
+
 }
 
 publishing {
