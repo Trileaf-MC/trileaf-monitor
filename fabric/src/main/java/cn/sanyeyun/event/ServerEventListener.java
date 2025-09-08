@@ -76,6 +76,8 @@ public class ServerEventListener {
                 if (response != null && response.isSuccess()) {
                     LOGGER.info("服务器注册成功,等待 Mod 信息采集完成...");
 
+                    // 服务器启动成功后去获取临时验证码
+
                     // 异步等待 Mod 信息和文件完成后上传
                     CompletableFuture.allOf(GlobalCache.getModInfos(), GlobalCache.getCompletelyUnmatchedFiles()).thenRun(() -> {
                         try {

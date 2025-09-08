@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.File;
+import java.security.KeyPair;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -47,6 +48,13 @@ public class GlobalCache {
     @Getter
     @Setter
     private static TrileafCertification trileafCertification;
+
+    /**
+     * 密钥对象
+     */
+    @Getter
+    @Setter
+    private static KeyPair keyPair;
 
     /**
      * 配置文件
