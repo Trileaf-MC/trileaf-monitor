@@ -76,6 +76,12 @@ public class ServerEventListener {
         // 已注册，直接登录
         if (serverId != null ) {
             login(serverId,server);
+            // 第二次启动也调用 Mod 上传
+            CompletableFuture<Void> modFuture = CompletableFuture.allOf(
+                    GlobalCache.getModInfos(),
+                    GlobalCache.getCompletelyUnmatchedFiles()
+            );
+            modFuture.thenRun(ServerEventListener::uploadModInfos);
             return;
         }
 
