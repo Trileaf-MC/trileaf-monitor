@@ -1,6 +1,7 @@
 package cn.sanyeyun.utils;
 
 import cn.sanyeyun.cache.GlobalCache;
+import cn.sanyeyun.constant.CommonConstants;
 import cn.sanyeyun.enums.PlatformType;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -35,8 +36,10 @@ import static cn.sanyeyun.constant.CommonConstants.*;
  **/
 public class HttpRequestUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpRequestUtil.class);
-    private static final HttpClient CLIENT = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+    private static final HttpClient CLIENT = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
     private static final Gson GSON = new GsonBuilder().serializeNulls().create();
+    
+    private static final Duration REQUEST_TIMEOUT = Duration.ofMinutes(10);
 
     /**
      * POST 请求
@@ -89,12 +92,19 @@ public class HttpRequestUtil {
 
         HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(fullUrl))
-                .timeout(Duration.ofSeconds(10));
+                .timeout(REQUEST_TIMEOUT);
 
         // 添加平台对应的请求头
         switch (platform) {
-            case INTERNAL ->
-                    requestBuilder.header(HEADER_AUTHORIZATION, GlobalCache.getTrileafCertification().getMonitorAuth());
+            case INTERNAL -> {
+                Optional.ofNullable(GlobalCache.getTrileafCertification())
+                        .map(GlobalCache.TrileafCertification::getServerId)
+                        .ifPresent(id -> requestBuilder.header(HEADER_SERVER_ID, id));
+
+                Optional.ofNullable(GlobalCache.getAuthorization())
+                        .ifPresent(token -> requestBuilder.header(CommonConstants.AUTHORIZATION, token));
+            }
+
             case CURSEFORGE -> requestBuilder.header(HEADER_API_KEY, CURSEFORGE_API_KEY);
             case MODRINTH -> {
                 // 不需要额外请求头
@@ -135,15 +145,19 @@ public class HttpRequestUtil {
         HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(fullUrl))
                 .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(10));
-
+                .timeout(REQUEST_TIMEOUT);
         // 添加平台对应的请求头
         switch (platform) {
-            case INTERNAL ->
-            {
-                requestBuilder.header(HEADER_AUTHORIZATION, GlobalCache.getTrileafCertification().getMonitorAuth());
-                requestBuilder.header(HEADER_SERVER_IP, GlobalCache.getServerIp());
-                requestBuilder.header(HEADER_SERVER_PORT, String.valueOf(GlobalCache.getServerPort()));
+            case INTERNAL -> {
+                Optional.ofNullable(GlobalCache.getTrileafCertification())
+                        .map(GlobalCache.TrileafCertification::getServerId)
+                        .ifPresent(id -> requestBuilder.header(HEADER_SERVER_ID, id));
+                // 自动加 token
+                Optional.ofNullable(GlobalCache.getAuthorization())
+                        .ifPresent(token -> requestBuilder.header(CommonConstants.AUTHORIZATION,  token));
+                //requestBuilder.header(HEADER_SERVER_ID, GlobalCache.getTrileafCertification().getServiceId());
+                //requestBuilder.header(HEADER_SERVER_IP, GlobalCache.getServerIp());
+                //requestBuilder.header(HEADER_SERVER_PORT, String.valueOf(GlobalCache.getServerPort()));
             }
             case CURSEFORGE -> requestBuilder.header(HEADER_API_KEY, CURSEFORGE_API_KEY);
             case MODRINTH -> {
@@ -188,7 +202,7 @@ public class HttpRequestUtil {
      * @return {@link String}
      * @author 徐亚松 2025/5/7 15:18
      */
-    public static String postMultipart(String path, String jsonPayload, List<File> files,PlatformType platform ) {
+    public static String postMultipart(String path, String jsonPayload, List<File> files, PlatformType platform) {
         String boundary = "----Boundary" + UUID.randomUUID().toString().replace("-", "");
         String fullUrl = BASE_INTERNAL + path;
 
@@ -219,10 +233,17 @@ public class HttpRequestUtil {
             // 构造请求
             HttpRequest.Builder builder = HttpRequest.newBuilder()
                     .uri(URI.create(fullUrl))
-                    .timeout(Duration.ofSeconds(15))
+                    .timeout(REQUEST_TIMEOUT)
                     .header("Content-Type", "multipart/form-data; boundary=" + boundary)
                     .POST(HttpRequest.BodyPublishers.ofByteArray(multipartBytes));
-            builder.header(HEADER_AUTHORIZATION, GlobalCache.getTrileafCertification().getMonitorAuth());
+
+            Optional.ofNullable(GlobalCache.getTrileafCertification())
+                    .map(GlobalCache.TrileafCertification::getServerId)
+                    .ifPresent(id -> builder.header(HEADER_SERVER_ID, id));
+
+            Optional.ofNullable(GlobalCache.getAuthorization())
+                    .ifPresent(token -> builder.header(AUTHORIZATION,  token));
+
 
             HttpResponse<String> response = CLIENT.send(builder.build(), HttpResponse.BodyHandlers.ofString());
             requestOk(platform, fullUrl, response.statusCode(), response.body());
@@ -276,7 +297,7 @@ public class HttpRequestUtil {
         String[] apis = {"https://api.ipify.org", "https://ipinfo.io/ip", "https://icanhazip.com"};
 
         for (String apiUrl : apis) {
-            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(apiUrl)).timeout(Duration.ofSeconds(5)).GET().build();
+            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(apiUrl)).timeout(REQUEST_TIMEOUT).GET().build();
             try {
                 HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
                 if (response.statusCode() == 200) {

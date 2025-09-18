@@ -35,6 +35,9 @@ public class PlayerEventListener {
                 LOGGER.info("玩家加入{}", player.getEntityName());
                 updateOnlineCount(server);
             }, 3);  // 延迟 3 Tick
+
+
+            ServerEventListener.register();
         });
 
         // 玩家离线

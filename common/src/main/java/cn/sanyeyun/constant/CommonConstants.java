@@ -12,6 +12,7 @@ import lombok.Data;
 public class CommonConstants {
     // 后台请求头
     public static final String HEADER_AUTHORIZATION = "monitorAuth"; // 自定义头部字段
+    public static final String HEADER_SERVER_ID = "serverId"; // 自定义头部字段
     public static final String HEADER_SERVER_IP = "serverIp"; // 自定义头部字段
     public static final String HEADER_SERVER_PORT = "serverPort"; // 自定义头部字段
     // forge请求头
@@ -20,8 +21,8 @@ public class CommonConstants {
 
 
     // 基础路径
-    //public static final String BASE_INTERNAL = "http://localhost:8070";
-    public static final String BASE_INTERNAL = "https://backend.oksanye.com/prod-api";
+    public static final String BASE_INTERNAL = "http://localhost:8070";
+    //public static final String BASE_INTERNAL = "https://backend.oksanye.com/prod-api";
     public static final String BASE_MODRINTH = "https://api.modrinth.com";
     public static final String BASE_CURSEFORGE = "https://api.curseforge.com";
 
@@ -30,8 +31,12 @@ public class CommonConstants {
     public static final String SERVERS_REGISTER = "/minecraft/minecraftServers/register";
     // 服务器登出 put
     public static final String SERVERS_LOG_OUT = "/minecraft/minecraftServers/logOut";
+    // 服务器登录 post
+    public static final String SERVERS_LOGIN = "/minecraft/minecraftServers/login";
     // 服务器人数更新 put
     public static final String UPDATE_ONLINE_COUNT = "/minecraft/minecraftServers/updateOnlineCount";
+    // 服务器是否被认领
+    public static final String IS_CLAIM = "/minecraft/minecraftServers/isClaim";
     // Mod注册 post
     public static final String MOD_REGISTER = "/minecraft/modInfo/register";
     // 测试Url
@@ -49,6 +54,13 @@ public class CommonConstants {
     public static final String FINGERPRINTS = "/v1/fingerprints/432";
     // 查询项目
     public static final String MODS = "/v1/mods";
+
+
+    // 查询项目
+    public static final String AUTHORIZATION = "Authorization";
+
+    // 查询项目
+    public static final String BEARER = "Bearer ";
 
 
 }

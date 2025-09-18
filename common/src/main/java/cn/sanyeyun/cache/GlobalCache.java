@@ -36,6 +36,7 @@ public class GlobalCache {
      */
     @Getter
     private static final CompletableFuture<List<ModInfo>> modInfos = new CompletableFuture<>();
+
     /**
      * Mod文件信息 修改成异步方式
      */
@@ -57,15 +58,43 @@ public class GlobalCache {
     private static KeyPair keyPair;
 
     /**
-     * 配置文件
+     * token
      */
     @Getter
     @Setter
+    private static String authorization;
+
+    /**
+     * 验证码
+     */
+    @Getter
+    @Setter
+    private static String verificationCode;
+
+    /**
+     * 配置文件
+     */
     public static class TrileafCertification {
         /**
          * 授权 header 值
          */
-        private String monitorAuth;
+        //private String monitorAuth;
+
+        /**
+         * 服务器Id
+         */
+        @Getter
+        @Setter
+        private String serverId;
+
+
+        /**
+         * 是否被认领
+         */
+        @Getter
+        @Setter
+        private Boolean claim = false;
+
     }
 
 

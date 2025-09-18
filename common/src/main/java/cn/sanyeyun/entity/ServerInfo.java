@@ -57,4 +57,9 @@ public class ServerInfo {
     private String javaVersion;
     /** 核心版本号 */
     private String coreVersion;
+    /**
+     * 公钥
+     */
+    private String publicKey ;
+
 }

@@ -5,11 +5,16 @@ import cn.sanyeyun.constant.CommonConstants;
 import cn.sanyeyun.entity.ModInfo;
 import cn.sanyeyun.entity.ServerInfo;
 import cn.sanyeyun.entity.response.RuoYiResponse;
+import cn.sanyeyun.entity.response.SuccessLoginResponse;
+import cn.sanyeyun.entity.response.SuccessRegisterResponse;
 import cn.sanyeyun.enums.PlatformType;
 import cn.sanyeyun.service.ModService;
+import cn.sanyeyun.utils.ConfigFileManager;
 import cn.sanyeyun.utils.HttpRequestUtil;
+import cn.sanyeyun.utils.KeyPairUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.DedicatedServer;
@@ -18,9 +23,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.security.PublicKey;
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
+import static cn.sanyeyun.constant.CommonConstants.SERVERS_LOGIN;
 import static cn.sanyeyun.constant.CommonConstants.SERVERS_REGISTER;
 
 /**
@@ -32,28 +44,24 @@ import static cn.sanyeyun.constant.CommonConstants.SERVERS_REGISTER;
 public class ServerEventListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerEventListener.class);
     private static final Gson GSON = new GsonBuilder().serializeNulls().create();
+    private static final ScheduledExecutorService SCHEDULER = Executors.newSingleThreadScheduledExecutor();
 
 
     public static void register() {
-        ServerLifecycleEvents.SERVER_STARTING.register((MinecraftServer server) -> {
-            LOGGER.info("服务端启动中,准备获取Mod信息");
-            // 异步执行采集Mod信息
-            //CompletableFuture.runAsync(ModService::collectModInfo);
-            // 异步开始 mod 信息采集
+        // 游戏启动中，异步收集 Mod 信息
+        ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+            LOGGER.info("服务端启动中，准备获取 Mod 信息");
             ModService.collectModInfoAsync();
         });
 
-        ServerLifecycleEvents.SERVER_STOPPING.register((MinecraftServer server) -> {
+        // 游戏关闭时异步通知退出
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             LOGGER.info("服务端关闭中");
             CompletableFuture.runAsync(() -> HttpRequestUtil.put(CommonConstants.SERVERS_LOG_OUT, null, PlatformType.INTERNAL));
         });
 
-        ServerLifecycleEvents.SERVER_STARTED.register((MinecraftServer server) -> {
-            LOGGER.info("服务端已启动,准备上报");
-            // 异步执行采集与上报逻辑
-            handleServerStarted(server);
-        });
-
+        // 游戏启动完成后注册服务器
+        ServerLifecycleEvents.SERVER_STARTED.register(ServerEventListener::handleServerStarted);
     }
 
     /**
@@ -64,53 +72,124 @@ public class ServerEventListener {
      * <p>2025/5/7 21:07</p>
      */
     private static void handleServerStarted(MinecraftServer server) {
-        try {
-            // 构建服务器注册请求参数
-            String json = GSON.toJson(buildFrom(server));
-
-            // 异步注册服务器
-            CompletableFuture.supplyAsync(() ->
-                    GSON.fromJson(HttpRequestUtil.post(SERVERS_REGISTER, json, PlatformType.INTERNAL),
-                            RuoYiResponse.class)
-            ).thenAccept(response -> {
-                if (response != null && response.isSuccess()) {
-                    LOGGER.info("服务器注册成功,等待 Mod 信息采集完成...");
-
-                    // 服务器启动成功后去获取临时验证码
-
-                    // 异步等待 Mod 信息和文件完成后上传
-                    CompletableFuture.allOf(GlobalCache.getModInfos(), GlobalCache.getCompletelyUnmatchedFiles()).thenRun(() -> {
-                        try {
-                            List<ModInfo> modInfos = GlobalCache.getModInfos().join();
-                            List<File> files = GlobalCache.getCompletelyUnmatchedFiles().join();
-
-                            if (modInfos == null || modInfos.isEmpty()) {
-                                LOGGER.warn("Mod 信息为空,跳过上传");
-                                return;
-                            }
-
-                            // 上传 Mod 信息
-                            HttpRequestUtil.postMultipart(CommonConstants.MOD_REGISTER, GSON.toJson(modInfos), files, PlatformType.INTERNAL);
-                            LOGGER.info("Mod 信息上传成功,共 {} 个 Mod", modInfos.size());
-                        } catch (Exception e) {
-                            LOGGER.error("上传 Mod 信息失败", e);
-                        }
-                    }).exceptionally(e -> {
-                        LOGGER.error("等待 Mod 采集完成时出现异常", e);
-                        return null;
-                    });
-
-                } else {
-                    LOGGER.warn("服务器注册失败,返回状态: {}", response);
-                }
-            }).exceptionally(e -> {
-                LOGGER.error("服务器注册失败", e);
-                return null;
-            });
-
-        } catch (Exception e) {
-            LOGGER.error("构建服务器注册请求失败", e);
+        String serverId = GlobalCache.getTrileafCertification().getServerId();
+        // 已注册，直接登录
+        if (serverId != null && !serverId.isEmpty()) {
+            serviceRegisterSuccess(serverId);
+            return;
         }
+
+        ServerInfo info = buildFrom(server);
+        String json = GSON.toJson(info);
+
+        // 异步注册服务器
+        CompletableFuture<RuoYiResponse> registerFuture = CompletableFuture.supplyAsync(() ->
+                GSON.fromJson(HttpRequestUtil.post(SERVERS_REGISTER, json, PlatformType.INTERNAL), RuoYiResponse.class)
+        );
+
+        // 等待注册完成 & Mod 信息收集完成，再上传 Mod
+        CompletableFuture<Void> modFuture = CompletableFuture.allOf(GlobalCache.getModInfos(), GlobalCache.getCompletelyUnmatchedFiles());
+
+        // 注册成功后处理登录/签名
+        registerFuture.thenAccept(response -> {
+            if (response != null && response.isSuccess()) {
+                LOGGER.info("服务器注册成功，登录并准备登录并上传 Mod 信息");
+                SuccessRegisterResponse obj = GSON.fromJson(GSON.toJson(response.getData()), SuccessRegisterResponse.class);
+                serviceRegisterSuccess(obj.getServerId());
+                // 等待 Mod 信息收集完成，再上传
+                modFuture.thenRun(ServerEventListener::uploadModInfos);
+            } else {
+                LOGGER.warn("服务器注册失败，返回状态: {}", response);
+            }
+        }).exceptionally(e -> {
+            LOGGER.error("服务器注册失败", e);
+            return null;
+        });
+    }
+
+    /**
+     * 登录 签名逻辑
+     *
+     * @param serverId 服务器Id
+     * @author 徐亚松 2025/9/10 11:46
+     */
+    private static void serviceRegisterSuccess(String serverId) {
+        GlobalCache.getTrileafCertification().setServerId(serverId);
+        ConfigFileManager.saveConfig();
+
+        try {
+            String signature = KeyPairUtil.sign(serverId, GlobalCache.getKeyPair().getPrivate());
+            JsonObject loginRequest = new JsonObject();
+            loginRequest.addProperty("serverId", serverId);
+            loginRequest.addProperty("signature", signature);
+
+            // 调用登录接口并解析返回值
+            RuoYiResponse ruoYiResponse = GSON.fromJson(HttpRequestUtil.post(SERVERS_LOGIN, GSON.toJson(loginRequest), PlatformType.INTERNAL), RuoYiResponse.class);
+            SuccessLoginResponse result = GSON.fromJson(GSON.toJson(ruoYiResponse.getData()), SuccessLoginResponse.class);
+            GlobalCache.setAuthorization(result.getAuthorization());
+            System.out.println(result);
+        } catch (Exception e) {
+            throw new RuntimeException("登录签名异常", e);
+        }
+    }
+
+
+    /**
+     * 上传 Mod 信息
+     *
+     * @author 徐亚松 2025/9/15 16:07
+     */
+    private static void uploadModInfos() {
+        try {
+            List<ModInfo> modInfos = GlobalCache.getModInfos().join();
+            List<File> files = GlobalCache.getCompletelyUnmatchedFiles().join();
+
+            if (modInfos == null || modInfos.isEmpty()) {
+                LOGGER.warn("Mod 信息为空，跳过上传");
+                return;
+            }
+
+            HttpRequestUtil.postMultipart(CommonConstants.MOD_REGISTER, GSON.toJson(modInfos), files, PlatformType.INTERNAL);
+            LOGGER.info("Mod 信息上传成功，共 {} 个 Mod", modInfos.size());
+        } catch (Exception e) {
+            LOGGER.error("上传 Mod 信息失败", e);
+        }
+    }
+
+
+    /**
+     * 每 1 秒轮询一次 /isClaim，直到返回 true 或者超时
+     */
+    private static void startClaimPolling(String verificationCode) {
+        final int maxAttempts = 60; // 最多 60 次，大约 1 分钟
+        final int[] attempts = {0};
+
+        SCHEDULER.scheduleAtFixedRate(() -> {
+            try {
+                Map<String, Object> params = Map.of("verificationCode", verificationCode);
+                String resp = HttpRequestUtil.get(CommonConstants.IS_CLAIM, params, PlatformType.INTERNAL);
+
+                // 反序列化成 AjaxResult
+                RuoYiResponse result = GSON.fromJson(resp, RuoYiResponse.class);
+
+                if (result != null && result.isSuccess()) {
+                    Object data = result.getData();
+                    if (data instanceof Boolean claimed && claimed) {
+                        LOGGER.info("验证码 {} 已被认领 ✅", verificationCode);
+                        SCHEDULER.shutdown();
+                        return;
+                    }
+                }
+
+                attempts[0]++;
+                if (attempts[0] >= maxAttempts) {
+                    LOGGER.warn("验证码 {} 在 {} 秒内未被认领，停止轮询 ⏹️", verificationCode, maxAttempts);
+                    SCHEDULER.shutdown();
+                }
+            } catch (Exception e) {
+                LOGGER.error("轮询 isClaim 接口失败", e);
+            }
+        }, 0, 1, TimeUnit.SECONDS);
     }
 
 
@@ -150,19 +229,10 @@ public class ServerEventListener {
         info.setCurrentPlayers((long) server.getCurrentPlayerCount());
         info.setMaxPlayers((long) server.getMaxPlayerCount());
         info.setJavaVersion(System.getProperty("java.version"));
-        // 图标
-        /*Path iconPath = Paths.get("server-icon.png");
-        if (Files.exists(iconPath)) {
-            byte[] bytes;
-            try {
-                bytes = Files.readAllBytes(iconPath);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            String base64 = Base64.getEncoder().encodeToString(bytes);
-            info.setIcon("data:image/png;base64," + base64);
-        }*/
 
+        String publicKeyStr = Base64.getEncoder()
+                .encodeToString(GlobalCache.getKeyPair().getPublic().getEncoded());
+        info.setPublicKey(publicKeyStr);
 
         return info;
     }

@@ -60,7 +60,6 @@ public class ConfigFileManager {
         try {
             Files.createDirectories(CONFIG_PATH.getParent());
             GlobalCache.TrileafCertification config = new GlobalCache.TrileafCertification();
-            config.setMonitorAuth(generateBase64Token(32));
             GlobalCache.setTrileafCertification(config);
             // 一次写入 避免重复io
             saveConfig();

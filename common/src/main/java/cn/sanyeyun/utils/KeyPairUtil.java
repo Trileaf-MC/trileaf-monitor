@@ -39,6 +39,7 @@ public class KeyPairUtil {
     public static void main(String[] args) {
         loadOrGenerateKeyPair();
     }
+
     /**
      * 加载本地密钥对，如果不存在则生成
      */
@@ -109,5 +110,22 @@ public class KeyPairUtil {
         );
         KeyFactory kf = KeyFactory.getInstance("Ed25519");
         return kf.generatePublic(new X509EncodedKeySpec(bytes));
+    }
+
+
+    /**
+     * 用私钥对消息签名
+     *
+     * @param message    待签名消息
+     * @param privateKey 私钥
+     * @return {@link String}
+     * @author 徐亚松 2025/9/15 14:48
+     */
+    public static String sign(String message, PrivateKey privateKey) throws Exception {
+        Signature sig = Signature.getInstance("Ed25519");
+        sig.initSign(privateKey);
+        sig.update(message.getBytes());
+        byte[] signatureBytes = sig.sign();
+        return Base64.getEncoder().encodeToString(signatureBytes);
     }
 }
