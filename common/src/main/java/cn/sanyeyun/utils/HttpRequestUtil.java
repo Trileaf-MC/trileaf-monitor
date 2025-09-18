@@ -99,7 +99,7 @@ public class HttpRequestUtil {
             case INTERNAL -> {
                 Optional.ofNullable(GlobalCache.getTrileafCertification())
                         .map(GlobalCache.TrileafCertification::getServerId)
-                        .ifPresent(id -> requestBuilder.header(HEADER_SERVER_ID, id));
+                        .ifPresent(id -> requestBuilder.header(HEADER_SERVER_ID, String.valueOf(id)));
 
                 Optional.ofNullable(GlobalCache.getAuthorization())
                         .ifPresent(token -> requestBuilder.header(CommonConstants.AUTHORIZATION, token));
@@ -151,7 +151,7 @@ public class HttpRequestUtil {
             case INTERNAL -> {
                 Optional.ofNullable(GlobalCache.getTrileafCertification())
                         .map(GlobalCache.TrileafCertification::getServerId)
-                        .ifPresent(id -> requestBuilder.header(HEADER_SERVER_ID, id));
+                        .ifPresent(id -> requestBuilder.header(HEADER_SERVER_ID, String.valueOf(id)));
                 // 自动加 token
                 Optional.ofNullable(GlobalCache.getAuthorization())
                         .ifPresent(token -> requestBuilder.header(CommonConstants.AUTHORIZATION,  token));
@@ -239,7 +239,7 @@ public class HttpRequestUtil {
 
             Optional.ofNullable(GlobalCache.getTrileafCertification())
                     .map(GlobalCache.TrileafCertification::getServerId)
-                    .ifPresent(id -> builder.header(HEADER_SERVER_ID, id));
+                    .ifPresent(id -> builder.header(HEADER_SERVER_ID, String.valueOf(id)));
 
             Optional.ofNullable(GlobalCache.getAuthorization())
                     .ifPresent(token -> builder.header(AUTHORIZATION,  token));

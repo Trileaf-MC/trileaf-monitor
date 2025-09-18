@@ -11,7 +11,6 @@ import lombok.Data;
 @Data
 public class CommonConstants {
     // 后台请求头
-    public static final String HEADER_AUTHORIZATION = "monitorAuth"; // 自定义头部字段
     public static final String HEADER_SERVER_ID = "serverId"; // 自定义头部字段
     public static final String HEADER_SERVER_IP = "serverIp"; // 自定义头部字段
     public static final String HEADER_SERVER_PORT = "serverPort"; // 自定义头部字段
@@ -28,19 +27,20 @@ public class CommonConstants {
 
 
     // 服务器注册 post
-    public static final String SERVERS_REGISTER = "/minecraft/minecraftServers/register";
+    public static final String SERVERS_REGISTER = "/monitor/minecraftServers/register";
     // 服务器登出 put
-    public static final String SERVERS_LOG_OUT = "/minecraft/minecraftServers/logOut";
+    public static final String SERVERS_LOG_OUT = "/monitor/minecraftServers/logOut";
     // 服务器登录 post
-    public static final String SERVERS_LOGIN = "/minecraft/minecraftServers/login";
+    public static final String SERVERS_LOGIN = "/monitor/minecraftServers/login";
     // 服务器人数更新 put
-    public static final String UPDATE_ONLINE_COUNT = "/minecraft/minecraftServers/updateOnlineCount";
-    // 服务器是否被认领
-    public static final String IS_CLAIM = "/minecraft/minecraftServers/isClaim";
+    public static final String UPDATE_ONLINE_COUNT = "/monitor/minecraftServers/updateOnlineCount";
+    // 服务器是否被认领 post
+    public static final String IS_CLAIM = "/monitor/minecraftServers/isClaim";
+
     // Mod注册 post
-    public static final String MOD_REGISTER = "/minecraft/modInfo/register";
+    public static final String MOD_REGISTER = "/monitor/minecraftServers/registerMod";
     // 测试Url
-    public static final String SERVERS_TEST = "/minecraft/minecraftServers/test";
+    public static final String SERVERS_TEST = "/monitor/minecraftServers/test";
 
 
     // modrinth Api

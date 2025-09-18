@@ -76,16 +76,11 @@ public class GlobalCache {
      */
     public static class TrileafCertification {
         /**
-         * 授权 header 值
-         */
-        //private String monitorAuth;
-
-        /**
          * 服务器Id
          */
         @Getter
         @Setter
-        private String serverId;
+        private Long serverId;
 
 
         /**

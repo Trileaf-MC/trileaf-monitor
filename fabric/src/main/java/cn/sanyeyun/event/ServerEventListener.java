@@ -72,10 +72,10 @@ public class ServerEventListener {
      * <p>2025/5/7 21:07</p>
      */
     private static void handleServerStarted(MinecraftServer server) {
-        String serverId = GlobalCache.getTrileafCertification().getServerId();
+        Long serverId = GlobalCache.getTrileafCertification().getServerId();
         // 已注册，直接登录
-        if (serverId != null && !serverId.isEmpty()) {
-            serviceRegisterSuccess(serverId);
+        if (serverId != null ) {
+            login(serverId,server);
             return;
         }
 
@@ -93,9 +93,10 @@ public class ServerEventListener {
         // 注册成功后处理登录/签名
         registerFuture.thenAccept(response -> {
             if (response != null && response.isSuccess()) {
-                LOGGER.info("服务器注册成功，登录并准备登录并上传 Mod 信息");
+                LOGGER.info("服务器注册成功，准备登录并上传 Mod 信息");
                 SuccessRegisterResponse obj = GSON.fromJson(GSON.toJson(response.getData()), SuccessRegisterResponse.class);
-                serviceRegisterSuccess(obj.getServerId());
+                // 登录
+                login(obj.getServerId(), server);
                 // 等待 Mod 信息收集完成，再上传
                 modFuture.thenRun(ServerEventListener::uploadModInfos);
             } else {
@@ -113,15 +114,18 @@ public class ServerEventListener {
      * @param serverId 服务器Id
      * @author 徐亚松 2025/9/10 11:46
      */
-    private static void serviceRegisterSuccess(String serverId) {
+    private static void login(Long serverId, MinecraftServer server) {
         GlobalCache.getTrileafCertification().setServerId(serverId);
         ConfigFileManager.saveConfig();
-
         try {
-            String signature = KeyPairUtil.sign(serverId, GlobalCache.getKeyPair().getPrivate());
+            String signature = KeyPairUtil.sign(String.valueOf(serverId), GlobalCache.getKeyPair().getPrivate());
             JsonObject loginRequest = new JsonObject();
             loginRequest.addProperty("serverId", serverId);
             loginRequest.addProperty("signature", signature);
+
+            ServerInfo info = buildFrom(server); // 获取当前最新配置
+            loginRequest.add("serverInfo", GSON.toJsonTree(info));
+
 
             // 调用登录接口并解析返回值
             RuoYiResponse ruoYiResponse = GSON.fromJson(HttpRequestUtil.post(SERVERS_LOGIN, GSON.toJson(loginRequest), PlatformType.INTERNAL), RuoYiResponse.class);

@@ -1,8 +1,6 @@
 package cn.sanyeyun.entity.response;
 
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 /**
  * 注册成功响应
@@ -15,11 +13,11 @@ public class SuccessRegisterResponse {
     /**
      * 服务器Id
      */
-    private  String serverId;
+    private Long serverId;
     /**
      * 验证码
      */
-    private  String verificationCode;
+    private String verificationCode;
     /**
      * 验证码
      */

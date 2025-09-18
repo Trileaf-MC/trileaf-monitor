@@ -6,8 +6,9 @@ import com.google.gson.GsonBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.*;
@@ -42,6 +43,8 @@ public class KeyPairUtil {
 
     /**
      * 加载本地密钥对，如果不存在则生成
+     *
+     * @author 徐亚松 2025/9/18 14:38
      */
     public static void loadOrGenerateKeyPair() {
         try {
@@ -50,20 +53,26 @@ public class KeyPairUtil {
             if (Files.exists(PRIVATE_KEY_PATH) && Files.exists(PUBLIC_KEY_PATH)) {
                 KeyPair keyPair = loadKeyPair();
                 GlobalCache.setKeyPair(keyPair);
-                LOGGER.info("成功加载本地密钥对。");
+                LOGGER.info("成功加载本地密钥对。私钥路径：{}，公钥路径：{}",
+                        PRIVATE_KEY_PATH.toAbsolutePath(), PUBLIC_KEY_PATH.toAbsolutePath());
             } else {
                 KeyPair keyPair = generateKeyPair();
                 saveKeyPair(keyPair);
                 GlobalCache.setKeyPair(keyPair);
-                LOGGER.info("本地密钥对不存在，已生成并保存。");
+                LOGGER.info("本地密钥对不存在，已生成并保存。私钥路径：{}，公钥路径：{}",
+                        PRIVATE_KEY_PATH.toAbsolutePath(), PUBLIC_KEY_PATH.toAbsolutePath());
             }
         } catch (Exception e) {
             LOGGER.error("加载或生成密钥对失败：", e);
         }
     }
 
+
     /**
      * 生成 Ed25519 密钥对
+     *
+     * @return {@link KeyPair}
+     * @author 徐亚松 2025/9/18 14:39
      */
     private static KeyPair generateKeyPair() throws Exception {
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("Ed25519");
@@ -72,23 +81,41 @@ public class KeyPairUtil {
 
     /**
      * 保存密钥对到本地
+     *
+     * @param keyPair 密钥对对象
+     * @author 徐亚松 2025/9/18 14:39
      */
     private static void saveKeyPair(KeyPair keyPair) throws IOException {
         saveKey(PRIVATE_KEY_PATH, keyPair.getPrivate().getEncoded(), "PRIVATE KEY");
         saveKey(PUBLIC_KEY_PATH, keyPair.getPublic().getEncoded(), "PUBLIC KEY");
     }
 
+    /**
+     * 保存密钥
+     *
+     * @param path     路径
+     * @param keyBytes 密钥数据
+     * @param header   头
+     * @author 徐亚松 2025/9/18 14:39
+     */
     private static void saveKey(Path path, byte[] keyBytes, String header) throws IOException {
         String base64 = Base64.getEncoder().encodeToString(keyBytes);
-        try (Writer writer = Files.newBufferedWriter(path)) {
-            writer.write("-----BEGIN " + header + "-----\n");
+        try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
+            writer.write("-----BEGIN " + header + "-----");
+            writer.newLine();
             writer.write(base64);
-            writer.write("\n-----END " + header + "-----");
+            writer.newLine();
+            writer.write("-----END " + header + "-----");
+            writer.newLine();
         }
     }
 
+
     /**
      * 从本地文件读取密钥对
+     *
+     * @return {@link KeyPair}
+     * @author 徐亚松 2025/9/18 14:40
      */
     private static KeyPair loadKeyPair() throws Exception {
         PrivateKey privateKey = loadPrivateKey(PRIVATE_KEY_PATH);
@@ -96,6 +123,13 @@ public class KeyPairUtil {
         return new KeyPair(publicKey, privateKey);
     }
 
+    /**
+     * 从本地文件读取私钥
+     *
+     * @param path 路径
+     * @return {@link PrivateKey}
+     * @author 徐亚松 2025/9/18 14:40
+     */
     private static PrivateKey loadPrivateKey(Path path) throws Exception {
         byte[] bytes = Base64.getDecoder().decode(
                 Files.readString(path).replaceAll("-----.*-----", "").replaceAll("\\s", "")
@@ -104,6 +138,13 @@ public class KeyPairUtil {
         return kf.generatePrivate(new PKCS8EncodedKeySpec(bytes));
     }
 
+    /**
+     * 从本地文件读取公钥
+     *
+     * @param path 路径
+     * @return {@link PublicKey}
+     * @author 徐亚松 2025/9/18 14:40
+     */
     private static PublicKey loadPublicKey(Path path) throws Exception {
         byte[] bytes = Base64.getDecoder().decode(
                 Files.readString(path).replaceAll("-----.*-----", "").replaceAll("\\s", "")

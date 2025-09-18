@@ -81,12 +81,4 @@ public class ConfigFileManager {
         }
     }
 
-    /**
-     * 生成指定字节长度的 Base64 编码字符串
-     */
-    private static String generateBase64Token(int byteLength) {
-        byte[] randomBytes = new byte[byteLength];
-        new SecureRandom().nextBytes(randomBytes);
-        return Base64.getEncoder().encodeToString(randomBytes);
-    }
 }

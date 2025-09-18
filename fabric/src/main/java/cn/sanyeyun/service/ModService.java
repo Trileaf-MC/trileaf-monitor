@@ -33,6 +33,12 @@ public class ModService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModService.class);
     private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 
+
+    /**
+     * 异步收集Mod信息
+     *
+     * @author 徐亚松 2025/9/18 14:42
+     */
     public static void collectModInfoAsync() {
         CompletableFuture.runAsync(() -> {
             try {
@@ -65,9 +71,7 @@ public class ModService {
                 GlobalCache.getModInfos().complete(modInfos);
 
 
-
             } catch (Exception e) {
-                // 异步异常也要 completeExceptionally
                 GlobalCache.getModInfos().completeExceptionally(e);
                 GlobalCache.getCompletelyUnmatchedFiles().completeExceptionally(e);
                 LOGGER.error(e.toString());
@@ -75,39 +79,6 @@ public class ModService {
         });
     }
 
-
-    /**
-     * 收集Mod信息
-     *
-     * @return boolean 是否采集成功
-     * @author 徐亚松
-     * <p>2025/5/7 22:24</p>
-     */
-/*    public static boolean collectModInfo() {
-        // 收集Mod
-        List<File> jarFiles = findModJarFiles();
-        if (jarFiles.isEmpty()) return false;
-        // 封装请求参数
-        Map<String, File> sha1Map = calculateSha1Hashes(jarFiles);
-        // 调用Modrinth查询
-        ModrinthResponse modrinthResponse = queryModrinth(sha1Map.keySet());
-
-        // 封装请求参数
-        Map<Long, File> murmurMap = handleUnmatchedSha1(sha1Map, modrinthResponse);
-        // 调用CurseForge查询
-        CurseForgeResponse curseForgeResponse = queryCurseForge(murmurMap.keySet());
-
-        // 收集没有任何匹配的mod
-        List<File> completelyUnmatchedFiles = collectUnmatchedFiles(murmurMap, curseForgeResponse);
-        GlobalCache.setCompletelyUnmatchedFiles(completelyUnmatchedFiles);
-
-        // 组装成请求数据
-        List<ModInfo> modInfos = buildFrom(modrinthResponse, curseForgeResponse);
-        GlobalCache.setModInfos(modInfos);
-        return !modInfos.isEmpty();
-        // String s = HttpRequestUtil.postMultipart(CommonConstants.MOD_REGISTER, GSON.toJson(modInfos), completelyUnmatchedFiles);
-
-    }*/
 
     /**
      * 构建请求数据
@@ -305,7 +276,8 @@ public class ModService {
             }
 
             // 解析项目详情列表
-            Type listType = new TypeToken<List<ModrinthProjectResponse>>() {}.getType();
+            Type listType = new TypeToken<List<ModrinthProjectResponse>>() {
+            }.getType();
             List<ModrinthProjectResponse> modrinthProjectResponse = GSON.fromJson(resultProject, listType);
             if (modrinthProjectResponse == null || modrinthProjectResponse.isEmpty()) {
                 LOGGER.warn("Modrinth 项目详情解析为空");
@@ -457,65 +429,12 @@ public class ModService {
     }
 
 
-
-    /*  private static CurseForgeResponse queryCurseForge(Set<Long> fingerprints) {
-        JsonObject json = new JsonObject();
-        JsonArray array = new JsonArray();
-        fingerprints.forEach(array::add);
-        json.add("fingerprints", array);
-
-        String result = HttpRequestUtil.post(CommonConstants.FINGERPRINTS, json.toString(), PlatformType.CURSEFORGE);
-        CurseForgeResponse curseForgeResponse = GSON.fromJson(result, CurseForgeResponse.class);
-
-        List<Long> modIds = curseForgeResponse.getData().getExactMatches().stream()
-                .map(v -> v.getFile().getId()).toList();
-        // 如果没有 modId，直接返回基础响应
-        if (modIds.isEmpty()) {
-            return curseForgeResponse;
-        }
-        JsonObject json1 = new JsonObject();
-        JsonArray array1 = new JsonArray();
-        modIds.forEach(array1::add);
-        json1.add("modIds", array1);
-
-        String post = HttpRequestUtil.post(CommonConstants.MODS, json1.toString(), PlatformType.CURSEFORGE);
-        JsonObject root = JsonParser.parseString(post).getAsJsonObject();
-        JsonArray dataArray = root.getAsJsonArray("data");
-
-        // 用于存储每个 mod id 对应的 slug 字符串
-        Map<Long, String> modCategoriesMap = new HashMap<>();
-
-        for (JsonElement element : dataArray) {
-            JsonObject mod = element.getAsJsonObject();
-            long modId = mod.get("id").getAsInt();
-            JsonArray categories = mod.getAsJsonArray("categories");
-
-            List<String> slugList = new ArrayList<>();
-            for (JsonElement catElement : categories) {
-                JsonObject category = catElement.getAsJsonObject();
-                if (category.has("slug") && !category.get("slug").isJsonNull()) {
-                    slugList.add(category.get("slug").getAsString());
-                }
-            }
-
-            String slugStr = String.join(",", slugList);
-            modCategoriesMap.put(modId, slugStr);
-        }
-
-        curseForgeResponse.getData().getExactMatches().forEach(v -> {
-            if (v == null) return;
-            v.setCategories(modCategoriesMap.get(v.getId()));
-        });
-
-        return curseForgeResponse;
-    }
-*/
     /**
      * 收集 modrinth和forge都没有匹配的Mod
      *
      * @param murmurMap murmur指纹集合
      * @param response  forge响应
-     * @return {@link List< File>}
+     * @return {@link List<File>}
      * @author 徐亚松
      * <p>2025/5/7 19:16</p>
      */
@@ -533,85 +452,5 @@ public class ModService {
     }
 
 
-    /**
-     * 加载Mod信息,并缓存起来
-     *
-     * @return
-     * @author 徐亚松
-     * <p>2025/5/7 14:39</p>
-     */
-    /*
-    public static void collectModInfo1() {
-        final File MODS_FOLDER = new File(System.getProperty("user.dir"), "mods");
-
-        if (!MODS_FOLDER.exists() || !MODS_FOLDER.isDirectory()) {
-            LOGGER.warn("mods 文件夹不存在！");
-            return;
-        }
-
-        File[] jarFiles = MODS_FOLDER.listFiles((dir, name) -> name.endsWith(".jar"));
-        if (jarFiles == null || jarFiles.length == 0) {
-            LOGGER.warn("未找到任何 mod jar 文件。");
-            return;
-        }
-
-        Map<String, File> sha1Map = new HashMap<>();
-        for (File jar : jarFiles) {
-            try {
-                String sha1 = HashUtil.hashFile(jar.getAbsolutePath(), "SHA-1");
-                sha1Map.put(sha1, jar);
-                LOGGER.info("计算 SHA-1 成功: {} -> {}", jar.getName(), sha1);
-            } catch (Exception e) {
-                LOGGER.error("计算 SHA-1 失败: {}", jar.getName(), e);
-            }
-        }
-
-        // 构建请求参数
-        JsonObject jsonObject = new JsonObject();
-        JsonArray hashes = new JsonArray();
-        for (String sha1 : sha1Map.keySet()) {
-            hashes.add(sha1);
-        }
-        jsonObject.add("hashes", hashes);
-        jsonObject.addProperty("algorithm", "sha1");
-
-        // 先去调用modrinth接口
-        String modrinthJsonString = HttpRequestUtil.post(CommonConstants.VERSION_FILES, jsonObject.toString(), PlatformType.MODRINTH);
-        ModrinthResponse modrinthResponse = GSON.fromJson(modrinthJsonString, ModrinthResponse.class);
-
-
-        // 遍历所有计算的 SHA-1，查看哪些没有命中，然后去计算murmurHash2
-        Map<Long, File> murmurHashMap = new HashMap<>();
-
-        for (Map.Entry<String, File> entry : sha1Map.entrySet()) {
-            String sha1 = entry.getKey();
-            File jar = entry.getValue();
-
-            if (!modrinthResponse.containsKey(sha1)) {
-                LOGGER.warn("未找到文件: {} (SHA-1: {})", jar.getName(), sha1);
-                try {
-                    Long murmurHash = HashUtil.murmurHash2(jar.getAbsolutePath());
-                    murmurHashMap.put(murmurHash, jar);
-                    LOGGER.info("计算 MurmurHash2 成功: {} -> {}", jar.getName(), murmurHash);
-                } catch (IOException e) {
-                    LOGGER.error("计算 MurmurHash2 失败: {}", jar.getName(), e);
-                }
-            }
-        }
-
-        JsonObject curseforgeRequest = new JsonObject();
-        JsonArray fingerprints = new JsonArray();
-
-        for (Long hash : murmurHashMap.keySet()) {
-            fingerprints.add(hash);
-        }
-
-        curseforgeRequest.add("fingerprints", fingerprints);
-
-        String curseforgeJsonString = HttpRequestUtil.post(CommonConstants.FINGERPRINTS, curseforgeRequest.toString(), PlatformType.CURSEFORGE);
-        CurseForgeResponse response = GSON.fromJson(curseforgeJsonString, CurseForgeResponse.class);
-
-    }
-    */
 }
 
