@@ -36,6 +36,9 @@ public class CommonConstants {
     public static final String UPDATE_ONLINE_COUNT = "/monitor/minecraftServers/updateOnlineCount";
     // 服务器是否被认领 post
     public static final String IS_CLAIM = "/monitor/minecraftServers/isClaim";
+    // 服务器心跳 post
+    public static final String HEARTBEAT = "/monitor/minecraftServers/heartbeat";
+
 
     // Mod注册 post
     public static final String MOD_REGISTER = "/monitor/minecraftServers/registerMod";

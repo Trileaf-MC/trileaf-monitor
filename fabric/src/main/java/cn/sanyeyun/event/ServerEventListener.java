@@ -23,10 +23,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.security.PublicKey;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -74,13 +73,13 @@ public class ServerEventListener {
     private static void handleServerStarted(MinecraftServer server) {
         Long serverId = GlobalCache.getTrileafCertification().getServerId();
         // 已注册，直接登录
-        if (serverId != null ) {
-            login(serverId,server);
-            // 第二次启动也调用 Mod 上传
-            CompletableFuture<Void> modFuture = CompletableFuture.allOf(
-                    GlobalCache.getModInfos(),
-                    GlobalCache.getCompletelyUnmatchedFiles()
-            );
+        if (serverId != null) {
+            // 直接同步登录
+            login(serverId, server);
+
+            // 等 mod 信息收集完成再上传
+            CompletableFuture<Void> modFuture = CompletableFuture.allOf(GlobalCache.getModInfos(), GlobalCache.getCompletelyUnmatchedFiles());
+
             modFuture.thenRun(ServerEventListener::uploadModInfos);
             return;
         }
@@ -101,9 +100,11 @@ public class ServerEventListener {
             if (response != null && response.isSuccess()) {
                 LOGGER.info("服务器注册成功，准备登录并上传 Mod 信息");
                 SuccessRegisterResponse obj = GSON.fromJson(GSON.toJson(response.getData()), SuccessRegisterResponse.class);
-                // 登录
+
+                // 登录(同步等待)
                 login(obj.getServerId(), server);
-                // 等待 Mod 信息收集完成，再上传
+
+                // 登录完成 + Mod 信息收集完成 → 上传
                 modFuture.thenRun(ServerEventListener::uploadModInfos);
             } else {
                 LOGGER.warn("服务器注册失败，返回状态: {}", response);
@@ -137,7 +138,7 @@ public class ServerEventListener {
             RuoYiResponse ruoYiResponse = GSON.fromJson(HttpRequestUtil.post(SERVERS_LOGIN, GSON.toJson(loginRequest), PlatformType.INTERNAL), RuoYiResponse.class);
             SuccessLoginResponse result = GSON.fromJson(GSON.toJson(ruoYiResponse.getData()), SuccessLoginResponse.class);
             GlobalCache.setAuthorization(result.getAuthorization());
-            System.out.println(result);
+            startHeartbeat();
         } catch (Exception e) {
             throw new RuntimeException("登录签名异常", e);
         }
@@ -168,38 +169,23 @@ public class ServerEventListener {
 
 
     /**
-     * 每 1 秒轮询一次 /isClaim，直到返回 true 或者超时
+     * 心跳 登录完成后调用
+     *
+     * @author 徐亚松 2025/9/19 14:32
      */
-    private static void startClaimPolling(String verificationCode) {
-        final int maxAttempts = 60; // 最多 60 次，大约 1 分钟
-        final int[] attempts = {0};
+    public static void startHeartbeat() {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-        SCHEDULER.scheduleAtFixedRate(() -> {
+        long heartbeatInterval = 1;
+        scheduler.scheduleAtFixedRate(() -> {
             try {
-                Map<String, Object> params = Map.of("verificationCode", verificationCode);
-                String resp = HttpRequestUtil.get(CommonConstants.IS_CLAIM, params, PlatformType.INTERNAL);
-
-                // 反序列化成 AjaxResult
-                RuoYiResponse result = GSON.fromJson(resp, RuoYiResponse.class);
-
-                if (result != null && result.isSuccess()) {
-                    Object data = result.getData();
-                    if (data instanceof Boolean claimed && claimed) {
-                        LOGGER.info("验证码 {} 已被认领 ✅", verificationCode);
-                        SCHEDULER.shutdown();
-                        return;
-                    }
-                }
-
-                attempts[0]++;
-                if (attempts[0] >= maxAttempts) {
-                    LOGGER.warn("验证码 {} 在 {} 秒内未被认领，停止轮询 ⏹️", verificationCode, maxAttempts);
-                    SCHEDULER.shutdown();
-                }
+                String response = HttpRequestUtil.post(CommonConstants.HEARTBEAT, null, PlatformType.INTERNAL);
+                System.out.println("心跳发送成功: " + LocalDateTime.now());
             } catch (Exception e) {
-                LOGGER.error("轮询 isClaim 接口失败", e);
+                e.printStackTrace();
+                System.err.println("心跳发送失败: " + LocalDateTime.now());
             }
-        }, 0, 1, TimeUnit.SECONDS);
+        }, 0, heartbeatInterval, TimeUnit.MINUTES);
     }
 
 
