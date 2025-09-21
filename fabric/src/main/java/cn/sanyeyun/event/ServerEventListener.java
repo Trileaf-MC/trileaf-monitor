@@ -21,11 +21,16 @@ import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.dedicated.ServerPropertiesHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.lang.reflect.Field;
 
 import java.io.File;
+import java.lang.reflect.Modifier;
+import java.security.KeyPair;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -76,10 +81,8 @@ public class ServerEventListener {
         if (serverId != null) {
             // 直接同步登录
             login(serverId, server);
-
             // 等 mod 信息收集完成再上传
             CompletableFuture<Void> modFuture = CompletableFuture.allOf(GlobalCache.getModInfos(), GlobalCache.getCompletelyUnmatchedFiles());
-
             modFuture.thenRun(ServerEventListener::uploadModInfos);
             return;
         }
@@ -137,7 +140,29 @@ public class ServerEventListener {
             // 调用登录接口并解析返回值
             RuoYiResponse ruoYiResponse = GSON.fromJson(HttpRequestUtil.post(SERVERS_LOGIN, GSON.toJson(loginRequest), PlatformType.INTERNAL), RuoYiResponse.class);
             SuccessLoginResponse result = GSON.fromJson(GSON.toJson(ruoYiResponse.getData()), SuccessLoginResponse.class);
-            GlobalCache.setAuthorization(result.getAuthorization());
+
+            GlobalCache.getServerRuntimeInfo().mergeFromResponse(result);
+
+        /*    Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            Map<String, Object> cacheMap = new HashMap<>();
+
+            for (Field field : GlobalCache.class.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers())) {
+                    field.setAccessible(true);
+                    try {
+                        Object value = field.get(null);
+                        // 过滤掉 CompletableFuture, KeyPair, File 等不可序列化字段
+                        if (value instanceof CompletableFuture || value instanceof KeyPair || value instanceof File) continue;
+                        cacheMap.put(field.getName(), value);
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            System.out.println("全局缓存内容: " + gson.toJson(cacheMap));
+*/
+            // 开启心跳
             startHeartbeat();
         } catch (Exception e) {
             throw new RuntimeException("登录签名异常", e);
@@ -180,10 +205,19 @@ public class ServerEventListener {
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 String response = HttpRequestUtil.post(CommonConstants.HEARTBEAT, null, PlatformType.INTERNAL);
-                System.out.println("心跳发送成功: " + LocalDateTime.now());
+                // 解析心跳返回
+                RuoYiResponse ruoYiResp = GSON.fromJson(response, RuoYiResponse.class);
+                SuccessLoginResponse result = GSON.fromJson(GSON.toJson(ruoYiResp.getData()), SuccessLoginResponse.class);
+
+                // 合并到全局缓存
+                if (result != null) {
+                    GlobalCache.getServerRuntimeInfo().mergeFromResponse(result); // 你之前写的 mergeIfNull 方法
+                }
+
+                LOGGER.info("心跳发送成功: {}", LocalDateTime.now());
             } catch (Exception e) {
                 e.printStackTrace();
-                System.err.println("心跳发送失败: " + LocalDateTime.now());
+                LOGGER.error("心跳发送失败: {}", LocalDateTime.now());
             }
         }, 0, heartbeatInterval, TimeUnit.MINUTES);
     }
@@ -204,7 +238,7 @@ public class ServerEventListener {
         if (server instanceof DedicatedServer dedicatedServer) {
             ServerPropertiesHandler properties = dedicatedServer.getProperties();
 
-            GlobalCache.setServerPort((long) properties.serverPort);
+            GlobalCache.getServerRuntimeInfo().setServerPort((long) properties.serverPort);
             info.setServerPort((long) properties.serverPort);
             info.setGameMode(properties.gameMode.getName());
             info.setDifficulty(properties.difficulty.getName());
@@ -220,7 +254,7 @@ public class ServerEventListener {
         info.setCoreType(server.getServerModName());
         info.setCoreVersion(server.getVersion());
         String publicIp = HttpRequestUtil.getPublicIp();
-        GlobalCache.setServerIp(publicIp);
+        GlobalCache.getServerRuntimeInfo().setServerIp(publicIp);
         info.setServerIp(publicIp);
         info.setCurrentPlayers((long) server.getCurrentPlayerCount());
         info.setMaxPlayers((long) server.getMaxPlayerCount());

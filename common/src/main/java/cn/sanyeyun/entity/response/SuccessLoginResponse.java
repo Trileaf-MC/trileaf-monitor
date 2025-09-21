@@ -28,6 +28,10 @@ public class SuccessLoginResponse{
      */
     private String verificationCode;
     /**
+     * 验证码过期时间 毫秒时间戳
+     */
+    private Long verificationExpireTime;
+    /**
      * 是否被认领
      */
     private Boolean claim;
