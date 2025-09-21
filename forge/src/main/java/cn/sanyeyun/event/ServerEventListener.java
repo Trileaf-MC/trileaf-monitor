@@ -110,7 +110,7 @@ public class ServerEventListener {
         if (server instanceof DedicatedServer dedicatedServer) {
             DedicatedServerProperties properties = dedicatedServer.getProperties();
 
-            GlobalCache.setServerPort((long) properties.serverPort);
+            GlobalCache.getServerRuntimeInfo().setServerPort((long) properties.serverPort);
             info.setServerPort((long) properties.serverPort);
             info.setGameMode(properties.gamemode.getName());
             info.setDifficulty(properties.difficulty.getSerializedName());
@@ -125,7 +125,7 @@ public class ServerEventListener {
         info.setCoreType(server.getServerModName());
         info.setCoreVersion(server.getServerVersion());
         String publicIp = HttpRequestUtil.getPublicIp();
-        GlobalCache.setServerIp(publicIp);
+        GlobalCache.getServerRuntimeInfo().setServerIp(publicIp);
         info.setServerIp(publicIp);
         info.setCurrentPlayers((long) server.getPlayerCount());
         info.setMaxPlayers((long) server.getMaxPlayers());

@@ -101,7 +101,7 @@ public class HttpRequestUtil {
                         .map(GlobalCache.TrileafCertification::getServerId)
                         .ifPresent(id -> requestBuilder.header(HEADER_SERVER_ID, String.valueOf(id)));
 
-                Optional.ofNullable(GlobalCache.getAuthorization())
+                Optional.ofNullable(GlobalCache.getServerRuntimeInfo().getAuthorization())
                         .ifPresent(token -> requestBuilder.header(CommonConstants.AUTHORIZATION, token));
             }
 
@@ -153,7 +153,7 @@ public class HttpRequestUtil {
                         .map(GlobalCache.TrileafCertification::getServerId)
                         .ifPresent(id -> requestBuilder.header(HEADER_SERVER_ID, String.valueOf(id)));
                 // 自动加 token
-                Optional.ofNullable(GlobalCache.getAuthorization())
+                Optional.ofNullable(GlobalCache.getServerRuntimeInfo().getAuthorization())
                         .ifPresent(token -> requestBuilder.header(CommonConstants.AUTHORIZATION,  token));
                 //requestBuilder.header(HEADER_SERVER_ID, GlobalCache.getTrileafCertification().getServiceId());
                 //requestBuilder.header(HEADER_SERVER_IP, GlobalCache.getServerIp());
@@ -241,7 +241,7 @@ public class HttpRequestUtil {
                     .map(GlobalCache.TrileafCertification::getServerId)
                     .ifPresent(id -> builder.header(HEADER_SERVER_ID, String.valueOf(id)));
 
-            Optional.ofNullable(GlobalCache.getAuthorization())
+            Optional.ofNullable(GlobalCache.getServerRuntimeInfo().getAuthorization())
                     .ifPresent(token -> builder.header(AUTHORIZATION,  token));
 
 

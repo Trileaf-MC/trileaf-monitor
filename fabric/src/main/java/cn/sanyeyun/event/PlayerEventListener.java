@@ -92,8 +92,8 @@ public class PlayerEventListener {
         UpdateOnlineCount onlineCount = new UpdateOnlineCount();
         onlineCount.setCurrentPlayers((long) server.getCurrentPlayerCount());
         onlineCount.setMaxPlayers((long) server.getMaxPlayerCount());
-        onlineCount.setServerIp(GlobalCache.getServerIp());
-        onlineCount.setServerPort(GlobalCache.getServerPort());
+        onlineCount.setServerIp(GlobalCache.getServerRuntimeInfo().getServerIp());
+        onlineCount.setServerPort(GlobalCache.getServerRuntimeInfo().getServerPort());
         return onlineCount;
     }
 
